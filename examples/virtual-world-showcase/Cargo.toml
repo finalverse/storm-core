@@ -1,0 +1,12 @@
+[package]
+name = "virtual-world-showcase"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+storm-core = { path = "../../crates/storm-core" }
+tokio = { workspace = true, features = ["full"] }
+anyhow.workspace = true
+tracing.workspace = true

@@ -1,0 +1,17 @@
+# File: crates/storm-math/Cargo.toml
+[package]
+name = "storm-math"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Math utilities for StormCore"
+
+[dependencies]
+serde.workspace = true
+glam.workspace = true
+nalgebra.workspace = true
+
+[features]
+default = ["glam-interop"]
+glam-interop = []

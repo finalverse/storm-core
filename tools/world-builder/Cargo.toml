@@ -1,0 +1,11 @@
+[package]
+name = "world_builder"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+clap = { workspace = true, features = ["derive"] }
+anyhow.workspace = true
+tokio = { workspace = true, features = ["full"] }

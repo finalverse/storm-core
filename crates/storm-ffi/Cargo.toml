@@ -1,0 +1,21 @@
+# File: crates/storm-ffi/Cargo.toml
+[package]
+name = "storm-ffi"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "FFI bindings infrastructure for StormCore"
+
+[dependencies]
+storm-core = { path = "../storm-core" }
+storm-ecs = { path = "../storm-ecs" }
+storm-math = { path = "../storm-math" }
+
+# FFI utilities
+libc = "0.2"
+once_cell.workspace = true
+tracing.workspace = true
+tokio = { workspace = true, features = ["rt"] }
+anyhow.workspace = true
+uuid = { version = "0.8.2", features = ["v4"] }

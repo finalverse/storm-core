@@ -1,0 +1,30 @@
+# File: crates/storm-rendering/Cargo.toml
+[package]
+name = "storm-rendering"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Cross-platform rendering pipeline for StormCore"
+
+[dependencies]
+# Core dependencies
+storm-math = { path = "../storm-math" }
+serde.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+
+# Optional platform-specific rendering
+metal = { version = "0.27", optional = true }
+ash = { version = "0.37", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[features]
+default = []
+metal = ["dep:metal"]
+vulkan = ["dep:ash"]
+wasm = []  # Enable WebGL support
+software = []  # Software rendering fallback
+

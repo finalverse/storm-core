@@ -1,0 +1,23 @@
+# File: crates/storm-assets/Cargo.toml
+[package]
+name = "storm-assets"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Asset management for StormCore"
+
+[dependencies]
+tokio = { workspace = true, features = ["fs", "io-util"] }
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+async-trait.workspace = true  # Added missing dependency
+
+# Asset processing
+image = "0.24"
+gltf = "1.4"
+tempfile = "3.20.0"

@@ -1,0 +1,24 @@
+# File: crates/storm-audio/Cargo.toml (Updated)
+[package]
+name = "storm-audio"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Spatial audio engine for StormCore"
+
+[dependencies]
+# Core dependencies
+tokio = { workspace = true, features = ["full"] }
+serde.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+
+# Audio processing libraries (placeholders for now)
+# cpal = "0.15"  # Cross-platform audio
+# rodio = "0.17" # Audio playback
+
+[features]
+default = []
+wasm = []  # Enable WASM-specific audio features
+spatial = []  # Enable spatial audio processing

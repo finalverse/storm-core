@@ -1,0 +1,99 @@
+# File: crates/storm-wasm/Cargo.toml
+[package]
+name = "storm-wasm"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "WebAssembly bindings for StormCore engine"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Core StormCore dependencies
+storm-core = { path = "../storm-core", default-features = false, features = ["wasm-target"] }
+storm-ecs = { path = "../storm-ecs" }
+storm-ai = { path = "../storm-ai", features = ["wasm"] }
+storm-math = { path = "../storm-math" }
+storm-assets = { path = "../storm-assets" }
+
+# WebAssembly specific dependencies
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "console",
+    "Window",
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "WebGlRenderingContext",
+    "WebGl2RenderingContext",
+    "WebGlProgram",
+    "WebGlShader",
+    "WebGlUniformLocation",
+    "WebSocket",
+    "MessageEvent",
+    "ErrorEvent",
+    "CloseEvent",
+    "Performance",
+    "PerformanceEntry",
+    "PerformanceMeasure",
+    "RequestAnimationFrame",
+    "AudioContext",
+    "AudioBuffer",
+    "AudioBufferSourceNode",
+    "GainNode",
+    "AnalyserNode",
+    "BiquadFilterNode",
+    "ConvolverNode",
+    "DelayNode",
+    "DynamicsCompressorNode",
+    "OscillatorNode",
+    "PannerNode",
+    "StereoPannerNode",
+    "WaveShaperNode",
+] }
+wasm-bindgen-futures = "0.4"
+
+# Error handling and debugging (optional)
+console_error_panic_hook = { version = "0.1", optional = true }
+wee_alloc = { version = "0.4", optional = true }
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+serde-wasm-bindgen = "0.5"
+
+# Async runtime
+futures.workspace = true
+wasm-bindgen-test = "0.3"
+
+# Logging
+tracing.workspace = true
+tracing-wasm = "0.2"
+
+# Random number generation for WASM
+getrandom = { version = "0.2", features = ["js"] }
+
+[features]
+default = ["panic-hook", "wee-alloc", "enhanced-audio"]
+
+# Error handling features
+panic-hook = ["dep:console_error_panic_hook"]
+wee-alloc = ["dep:wee_alloc"]
+
+# Audio features
+enhanced-audio = []
+spatial-audio = []
+voice-synthesis = []
+
+# Debug features
+debug = []
+
+# Performance features
+simd = []
+gpu-acceleration = []
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals"]

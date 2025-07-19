@@ -1,0 +1,38 @@
+# File: crates/storm-ai/Cargo.toml
+[package]
+name = "storm-ai"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "AI dispatcher and ML models for StormCore"
+
+[dependencies]
+# Core dependencies
+tokio = { workspace = true, features = ["full"] }
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+
+# AI & ML - Updated to 0.9.1
+candle-core.workspace = true
+candle-nn.workspace = true
+candle-transformers.workspace = true
+reqwest = { workspace = true, features = ["json"] }
+
+# Utilities
+uuid.workspace = true
+once_cell.workspace = true
+
+# For WASM compatibility
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Use getrandom with js feature for WASM
+getrandom = { workspace = true, features = ["js"] }
+
+[features]
+default = ["enhanced"]
+enhanced = []
+wasm = []  # Simple feature flag for WASM builds

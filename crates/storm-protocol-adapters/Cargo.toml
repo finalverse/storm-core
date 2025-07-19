@@ -1,0 +1,35 @@
+# File: crates/storm-protocol-adapters/Cargo.toml (updated)
+[package]
+name = "storm-protocol-adapters"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Protocol adapters for virtual world protocols"
+
+[dependencies]
+# Core dependencies
+tokio = { workspace = true, features = ["full"] }
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+# Workspace dependencies - REMOVED storm-core to break cycle
+storm-ecs = { path = "../storm-ecs" }
+storm-ai = { path = "../storm-ai" }
+storm-networking = { path = "../storm-networking" }
+storm-math = { path = "../storm-math" }
+
+# Protocol-specific
+bytes = "1.5"
+url = "2.4"
+async-trait = "0.1"
+
+[features]
+default = ["opensim", "finalverse"]
+opensim = []
+finalverse = []

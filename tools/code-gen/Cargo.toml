@@ -1,0 +1,20 @@
+# File: tools/code-gen/Cargo.toml
+[package]
+name = "storm-code-gen"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Code generation utilities for StormCore"
+
+[dependencies]
+# Code generation
+syn = "2.0"
+quote = "1.0"
+proc-macro2 = "1.0"
+
+# Utilities
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+clap = { version = "4.0", features = ["derive"] }

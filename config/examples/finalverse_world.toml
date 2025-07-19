@@ -1,0 +1,16 @@
+# Example Finalverse world configuration
+[world]
+name = "Test Finalverse World"
+description = "Example Finalverse server connection"
+protocol = "finalverse"
+
+[connection]
+server_url = "wss://finalverse.example.com/world"
+auth_token = "your_auth_token_here"
+
+[features]
+enable_ai_features = true
+ai_enhancement_level = "advanced"
+procedural_generation = true
+ai_inhabitants = true
+dynamic_weather = true

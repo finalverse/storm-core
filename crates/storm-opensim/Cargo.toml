@@ -1,0 +1,25 @@
+# File: crates/storm-opensim/Cargo.toml
+[package]
+name = "storm-opensim"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "OpenSim protocol implementation for StormCore"
+
+[dependencies]
+# Core dependencies
+storm-ecs = { path = "../storm-ecs" }
+storm-networking = { path = "../storm-networking" }
+storm-protocol-adapters = { path = "../storm-protocol-adapters" }
+storm-math = { path = "../storm-math" }
+
+# Protocol implementation
+tokio = { workspace = true, features = ["full"] }
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+bytes = "1.5"
+tracing.workspace = true
+anyhow.workspace = true
+rand = "0.8.5"

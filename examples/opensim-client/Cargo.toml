@@ -1,0 +1,15 @@
+# File: examples/opensim-client/Cargo.toml
+[package]
+name = "opensim-client"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "OpenSim client example for StormCore"
+
+[dependencies]
+storm-core = { path = "../../crates/storm-core", features = ["protocol-opensim"] }
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true

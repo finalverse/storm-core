@@ -1,0 +1,43 @@
+# File: crates/storm-core/Cargo.toml (updated)
+[package]
+name = "storm-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Cross-platform AI-driven 3D virtual world engine core"
+
+[dependencies]
+# Workspace dependencies
+storm-ecs = { path = "../storm-ecs" }
+storm-ai = { path = "../storm-ai" }
+storm-networking = { path = "../storm-networking" }
+storm-protocol-adapters = { path = "../storm-protocol-adapters" }
+storm-rendering = { path = "../storm-rendering", optional = true }
+storm-audio = { path = "../storm-audio", optional = true }
+storm-physics = { path = "../storm-physics", optional = true }
+storm-math = { path = "../storm-math" }
+storm-assets = { path = "../storm-assets" }
+
+# External dependencies
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "time"] }
+futures.workspace = true
+serde.workspace = true
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
+anyhow.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+serde_json = "1.0.141"
+
+[features]
+default = ["rendering", "audio", "physics", "ai-enhanced"]
+rendering = ["dep:storm-rendering"]
+audio = ["dep:storm-audio"]
+physics = ["dep:storm-physics"]
+ai-enhanced = ["storm-ai/enhanced"]
+protocol-opensim = ["storm-protocol-adapters/opensim"]
+protocol-finalverse = ["storm-protocol-adapters/finalverse"]
+metal-backend = ["storm-rendering?/metal"]
+vulkan-backend = ["storm-rendering?/vulkan"]
+wasm-target = ["storm-rendering?/wasm", "storm-audio?/wasm"]

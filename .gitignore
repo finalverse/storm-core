@@ -1,0 +1,77 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# AI Models & Cache
+/models/
+*.bin
+*.onnx
+*.pt
+
+# Build artifacts
+/build/
+/dist/
+/out/
+
+# FFI generated files
+*.h
+!crates/storm-ffi/storm_core.h
+
+# Platform specific
+*.dylib
+*.so
+*.dll
+*.a
+
+# Documentation build
+/book/
+/docs/book/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment
+.env
+.env.local
+
+# Coverage
+tarpaulin-report.html
+lcov.info
+
+# Benchmark results
+criterion/
+
+# WebAssembly
+*.wasm
+pkg/
+
+# Node modules (if any JS tooling)
+node_modules/
+
+# Python (if any Python tooling)
+__pycache__/
+*.py[cod]
+*$py.class

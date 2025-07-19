@@ -1,0 +1,18 @@
+# Example OpenSim world configuration
+[world]
+name = "Test OpenSim World"
+description = "Example OpenSim grid connection"
+protocol = "opensim"
+
+[connection]
+grid_url = "http://login.osgrid.org/"
+username = "Test User"
+password = "password123"
+start_location = "home"
+
+[features]
+enable_ai_features = true
+ai_enhancement_level = "standard"
+smart_pathfinding = true
+predictive_caching = true
+content_generation = false

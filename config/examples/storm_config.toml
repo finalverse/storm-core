@@ -1,0 +1,40 @@
+# Example StormCore configuration
+[engine]
+enable_rendering = true
+enable_audio = true
+enable_physics = true
+enable_ai = true
+debug_mode = true
+
+[ai]
+grok_api_endpoint = "https://api.x.ai/v1"
+local_ml_enabled = true
+model_cache_dir = "./models"
+max_concurrent_requests = 10
+ai_enhancement_timeout_ms = 200
+
+[network]
+max_connections = 100
+connection_timeout_ms = 5000
+packet_buffer_size = 8192
+compression_enabled = true
+encryption_enabled = true
+
+[rendering]
+backend = "auto"  # auto, metal, vulkan, webgl, software
+vsync_enabled = true
+max_fps = 60
+shadow_quality = "medium"
+texture_quality = "high"
+
+[audio]
+sample_rate = 44100
+buffer_size = 512
+spatial_audio_enabled = true
+max_audio_sources = 64
+
+[physics]
+gravity = [0.0, -9.81, 0.0]
+timestep = 0.016666667  # 60 FPS
+max_substeps = 4
+collision_detection_enabled = true

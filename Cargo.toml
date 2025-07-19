@@ -1,0 +1,133 @@
+[workspace]
+resolver = "2"
+members = [
+    # Core engine libraries only
+    "crates/storm-math",
+    "crates/storm-ecs",
+    "crates/storm-ai",
+    "crates/storm-networking",
+    "crates/storm-rendering",
+    "crates/storm-audio",
+    "crates/storm-physics",
+    "crates/storm-assets",
+    "crates/storm-protocol-adapters",
+    "crates/storm-core",
+    "crates/storm-ffi",
+
+    # Protocol implementations
+    "crates/storm-opensim",
+    "crates/storm-finalverse",
+
+    # Examples that don't depend on WASM
+    "examples/opensim-client",
+    "examples/virtual-world-showcase",
+
+    # Tools
+    "tools/code-gen",
+    "tools/asset-processor",
+    "tools/protocol-tester",
+    "tools/world-builder",
+
+    # Services
+    "services/ai-orchestrator",
+    "services/world-generator",
+    "services/avatar-ai",
+    "services/content-moderator",
+]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+authors = ["Storm Development Team", "Finalverse Contributors"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/finalverse/storm-core"
+homepage = "https://finalverse.com/storm"
+documentation = "https://docs.rs/storm-core"
+
+[workspace.dependencies]
+# Core async runtime
+tokio = { version = "1.35", features = ["full"] }
+futures = "0.3"
+async-trait = "0.1"
+
+# ECS Framework
+legion = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# AI & ML - Updated to latest stable versions
+candle-core = "0.9.1"
+candle-nn = "0.9.1"
+candle-transformers = "0.9.1"
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# Enhanced networking
+tokio-tungstenite = "0.20"
+quinn = "0.10"
+zstd = "0.12"
+bytes = "1.5"
+url = "2.4"
+
+# FFI & Cross-platform
+uniffi = { version = "0.25", features = ["build"] }
+cbindgen = "0.26"
+
+# Math & Graphics
+glam = { version = "0.24", features = ["serde"] }
+nalgebra = "0.32"
+
+# Audio processing
+cpal = "0.15"
+symphonia = "0.5"
+rubato = "0.14"
+hound = "3.5"
+
+# Physics engines
+rapier3d = "0.17"
+
+# Graphics APIs
+wgpu = "0.18"
+winit = "0.28"
+
+# Asset processing
+image = "0.24"
+gltf = "1.4"
+
+# Utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+thiserror = "1.0"
+once_cell = "1.19"
+
+# Database & Storage
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "sqlite"] }
+redis = "0.24"
+
+# Configuration
+config = "0.13"
+clap = { version = "4.0", features = ["derive"] }
+
+# Testing
+criterion = "0.5"
+mockall = "0.12"
+proptest = "1.4"
+
+# Random generation
+rand = "0.8"
+getrandom = "0.2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+
+[profile.dev]
+debug = true
+opt-level = 0
+
+[profile.bench]
+debug = true

@@ -1,0 +1,370 @@
+<!-- File: examples/wasm-client/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>StormCore WASM Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .controls {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .controls h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+        .control-group input, .control-group select {
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+            width: 300px;
+        }
+        .control-group button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .control-group button:hover {
+            background: #45a049;
+        }
+        .control-group button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .canvas-container {
+            background: #000;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        #storm-canvas {
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+        }
+        .status-panel {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .status-panel h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .status-item {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .status-item .label {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+        .status-item .value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .log-panel {
+            background: #1a1a1a;
+            border: 1px solid #555;
+            border-radius: 4px;
+            height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .error { color: #ff6b6b; }
+        .warning { color: #feca57; }
+        .info { color: #48dbfb; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🌩️ StormCore WebAssembly Demo</h1>
+    <p>AI-driven 3D virtual world engine running in your browser</p>
+
+    <div class="controls">
+        <h2>🎮 Engine Controls</h2>
+
+        <div class="control-group">
+            <label for="world-url">World URL:</label>
+            <input type="text" id="world-url" value="ws://localhost:9000"
+                   placeholder="Enter virtual world URL">
+        </div>
+
+        <div class="control-group">
+            <label for="protocol-select">Protocol:</label>
+            <select id="protocol-select">
+                <option value="opensim">OpenSim/MutSea</option>
+                <option value="finalverse">Finalverse</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <button id="connect-btn">🔗 Connect to World</button>
+            <button id="start-btn">▶️ Start Engine</button>
+            <button id="stop-btn">⏸️ Stop Engine</button>
+            <button id="disconnect-btn">❌ Disconnect</button>
+        </div>
+
+        <div class="control-group">
+            <label>Engine Status:</label>
+            <span id="status" style="font-weight: bold; color: #feca57;">Initializing...</span>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <h2>🖼️ 3D Viewport</h2>
+        <canvas id="storm-canvas" width="800" height="600">
+            Your browser doesn't support the HTML5 canvas element.
+        </canvas>
+        <p><em>WebGL rendering will appear here once connected to a virtual world</em></p>
+    </div>
+
+    <div class="status-panel">
+        <h3>📊 Engine Statistics</h3>
+        <div class="status-grid">
+            <div class="status-item">
+                <div class="label">Frame Rate</div>
+                <div class="value" id="fps-counter">0 FPS</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Entities</div>
+                <div class="value" id="entity-count">0</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Memory Usage</div>
+                <div class="value" id="memory-usage">0 MB</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Network Status</div>
+                <div class="value" id="network-status">Disconnected</div>
+            </div>
+            <div class="status-item">
+                <div class="label">AI Enhancement</div>
+                <div class="value" id="ai-status">Enabled</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Protocol</div>
+                <div class="value" id="protocol-status">None</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-panel">
+        <h3>📝 Engine Log</h3>
+        <div id="log-panel" class="log-panel">
+            <div class="info">[INFO] StormCore WASM Demo loaded</div>
+            <div class="info">[INFO] Waiting for engine initialization...</div>
+        </div>
+    </div>
+
+    <div class="status-panel">
+        <h3>🚀 Quick Start Guide</h3>
+        <ol>
+            <li><strong>Initialize:</strong> The engine should initialize automatically when the page loads</li>
+            <li><strong>Connect:</strong> Enter a virtual world URL and select the appropriate protocol</li>
+            <li><strong>Start:</strong> Click "Start Engine" to begin the main update loop</li>
+            <li><strong>Explore:</strong> The 3D viewport will show the virtual world once connected</li>
+        </ol>
+
+        <h4>🌍 Supported Virtual Worlds:</h4>
+        <ul>
+            <li><strong>OpenSim/MutSea:</strong> Compatible with OpenSimulator grids</li>
+            <li><strong>Finalverse:</strong> Next-generation AI-enhanced virtual worlds</li>
+        </ul>
+
+        <h4>🎯 Demo Features:</h4>
+        <ul>
+            <li>✅ Cross-platform WASM engine core</li>
+            <li>✅ WebGL rendering pipeline</li>
+            <li>✅ Multi-protocol support (OpenSim, Finalverse)</li>
+            <li>✅ AI-enhanced world interactions</li>
+            <li>✅ Real-time statistics and monitoring</li>
+            <li>🔄 ECS-based entity management</li>
+            <li>🔄 Spatial audio system</li>
+            <li>🔄 Physics simulation</li>
+        </ul>
+    </div>
+</div>
+
+<script type="module">
+    import init, {
+        init_client,
+        shutdown_client,
+        get_engine_stats
+    } from './pkg/storm_wasm_client.js';
+
+    let engineInitialized = false;
+    let statsInterval = null;
+
+    // Initialize WASM module and client
+    async function initializeClient() {
+        try {
+            await init();
+            await init_client();
+            engineInitialized = true;
+            updateStatus('Initialized');
+            logMessage('Engine initialized successfully', 'info');
+
+            // Start statistics update loop
+            startStatsLoop();
+
+        } catch (error) {
+            console.error('Failed to initialize:', error);
+            updateStatus('Initialization Failed');
+            logMessage(`Initialization failed: ${error}`, 'error');
+        }
+    }
+
+    // Update UI status
+    function updateStatus(status) {
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = status;
+        }
+    }
+
+    // Log message to the log panel
+    function logMessage(message, type = 'info') {
+        const logPanel = document.getElementById('log-panel');
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement('div');
+        logEntry.className = type;
+        logEntry.textContent = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+
+        logPanel.appendChild(logEntry);
+        logPanel.scrollTop = logPanel.scrollHeight;
+
+        // Limit log entries to prevent memory issues
+        if (logPanel.children.length > 100) {
+            logPanel.removeChild(logPanel.firstChild);
+        }
+    }
+
+    // Start statistics update loop
+    function startStatsLoop() {
+        if (statsInterval) {
+            clearInterval(statsInterval);
+        }
+
+        statsInterval = setInterval(() => {
+            if (!engineInitialized) return;
+
+            try {
+                const stats = get_engine_stats();
+                updateStatistics(stats);
+            } catch (error) {
+                console.warn('Failed to get engine stats:', error);
+            }
+        }, 1000);
+    }
+
+    // Update statistics display
+    function updateStatistics(stats) {
+        if (stats.fps !== undefined) {
+            document.getElementById('fps-counter').textContent = `${stats.fps.toFixed(1)} FPS`;
+        }
+        if (stats.entities !== undefined) {
+            document.getElementById('entity-count').textContent = stats.entities;
+        }
+        if (stats.memory_mb !== undefined) {
+            document.getElementById('memory-usage').textContent = `${stats.memory_mb.toFixed(1)} MB`;
+        }
+    }
+
+    // Setup additional UI handlers
+    function setupAdditionalHandlers() {
+        // Stop button
+        document.getElementById('stop-btn').addEventListener('click', () => {
+            logMessage('Stopping engine...', 'info');
+            updateStatus('Stopped');
+        });
+
+        // Disconnect button
+        document.getElementById('disconnect-btn').addEventListener('click', () => {
+            logMessage('Disconnecting from world...', 'info');
+            updateStatus('Disconnected');
+            document.getElementById('network-status').textContent = 'Disconnected';
+            document.getElementById('protocol-status').textContent = 'None';
+        });
+
+        // Protocol change handler
+        document.getElementById('protocol-select').addEventListener('change', (e) => {
+            const protocol = e.target.value;
+            document.getElementById('protocol-status').textContent = protocol;
+            logMessage(`Protocol changed to: ${protocol}`, 'info');
+        });
+    }
+
+    // Handle page visibility changes
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            logMessage('Page hidden - pausing updates', 'warning');
+        } else {
+            logMessage('Page visible - resuming updates', 'info');
+        }
+    });
+
+    // Handle window unload
+    window.addEventListener('beforeunload', async () => {
+        if (engineInitialized) {
+            await shutdown_client();
+        }
+    });
+
+    // Start initialization when page loads
+    window.addEventListener('load', () => {
+        setupAdditionalHandlers();
+        initializeClient();
+    });
+
+    // Handle errors
+    window.addEventListener('error', (event) => {
+        logMessage(`JavaScript error: ${event.error}`, 'error');
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        logMessage(`Unhandled promise rejection: ${event.reason}`, 'error');
+    });
+</script>
+</body>
+</html>

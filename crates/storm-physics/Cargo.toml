@@ -1,0 +1,25 @@
+# File: crates/storm-physics/Cargo.toml (Updated)
+[package]
+name = "storm-physics"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Physics simulation for StormCore"
+
+[dependencies]
+# Core dependencies
+storm-math = { path = "../storm-math" }
+storm-ecs = { path = "../storm-ecs" }
+serde.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+
+# Physics engines (placeholders)
+# rapier3d = "0.17"  # 3D physics engine
+
+[features]
+default = []
+wasm = []  # WASM-compatible physics
+bullet = []  # Bullet physics integration
+rapier = []  # Rapier physics engine

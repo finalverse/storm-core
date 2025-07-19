@@ -1,0 +1,39 @@
+# File: examples/wasm-client/Cargo.toml
+# WebAssembly client example for StormCore
+
+[package]
+name = "storm-wasm-client"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "WebAssembly client example for StormCore"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+storm-wasm = { path = "../../crates/storm-wasm" }
+wasm-bindgen.workspace = true
+# web-sys.workspace = true
+js-sys.workspace = true
+console_error_panic_hook.workspace = true
+wee_alloc.workspace = true
+
+[dependencies.web-sys]
+workspace = true
+features = [
+    "console",
+    "Window",
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "HtmlInputElement",
+    "HtmlButtonElement",
+    "Event",
+    "EventTarget",
+    "MouseEvent",
+    "KeyboardEvent",
+    "WebGlRenderingContext",
+    "RequestAnimationFrame",
+]
