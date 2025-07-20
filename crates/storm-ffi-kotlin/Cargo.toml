@@ -1,6 +1,23 @@
+# File: storm-core/crates/storm-ffi-kotlin/Cargo.toml
+# Description: Kotlin/Android FFI bindings for StormCore
+
 [package]
 name = "storm-ffi-kotlin"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Kotlin/Android FFI bindings for StormCore"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
+# No external dependencies for now - basic FFI only
+
+[dev-dependencies]
+# No dev dependencies for now
+
+[features]
+default = []
+jni = []  # Future JNI integration

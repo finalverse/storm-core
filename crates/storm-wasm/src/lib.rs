@@ -1,5 +1,5 @@
-// File: crates/storm-wasm/src/lib.rs
-// WebAssembly bindings for StormCore engine
+// File: storm-core/crates/storm-wasm/src/lib.rs
+// Description: WebAssembly bindings for StormCore engine
 // Provides browser-compatible API for 3D virtual world clients
 
 use wasm_bindgen::prelude::*;
@@ -14,7 +14,8 @@ use storm_core::{StormCore, StormConfig};
 use storm_ecs::{Entity, Component};
 use storm_math::{Vec3, Quat, Transform};
 
-// Global allocator for WASM
+// Conditional compilation for allocator features
+#[cfg(feature = "wee-alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
@@ -25,6 +26,7 @@ static ENGINE: Lazy<Arc<Mutex<Option<StormCore>>>> =
 /// Initialize panic hook for better error messages in browser console
 #[wasm_bindgen(start)]
 pub fn init() {
+    #[cfg(feature = "panic-hook")]
     console_error_panic_hook::set_once();
 
     // Initialize tracing for browser console
@@ -80,26 +82,28 @@ impl WasmStormConfig {
 
     #[wasm_bindgen(setter)]
     pub fn set_enable_ai(&mut self, value: bool) { self.enable_ai = value; }
+
+    #[wasm_bindgen(getter)]
+    pub fn debug_mode(&self) -> bool { self.debug_mode }
+
+    #[wasm_bindgen(setter)]
+    pub fn set_debug_mode(&mut self, value: bool) { self.debug_mode = value; }
 }
 
 impl From<WasmStormConfig> for StormConfig {
     fn from(wasm_config: WasmStormConfig) -> Self {
-        let mut config = StormConfig::default();
-        config.enable_rendering = wasm_config.enable_rendering;
-        config.enable_audio = wasm_config.enable_audio;
-        config.enable_physics = wasm_config.enable_physics;
-        config.enable_ai_enhanced = wasm_config.enable_ai;
-        config.debug_mode = wasm_config.debug_mode;
-
-        // WASM-specific overrides
-        config.platform = storm_core::PlatformType::WASM;
-        config.render_config.backend = storm_core::RenderBackend::WebGL;
-
-        config
+        StormConfig {
+            enable_rendering: wasm_config.enable_rendering,
+            enable_audio: wasm_config.enable_audio,
+            enable_physics: wasm_config.enable_physics,
+            enable_ai: wasm_config.enable_ai,
+            debug_mode: wasm_config.debug_mode,
+            ..Default::default()
+        }
     }
 }
 
-/// Main WASM engine wrapper
+/// WASM Engine wrapper
 #[wasm_bindgen]
 pub struct WasmStormEngine {
     initialized: bool,
@@ -117,18 +121,19 @@ impl WasmStormEngine {
     /// Initialize the engine with configuration
     #[wasm_bindgen]
     pub async fn initialize(&mut self, config: WasmStormConfig) -> Result<(), JsValue> {
-        console::log_1(&"Initializing StormCore engine for WASM".into());
+        if self.initialized {
+            return Err(JsValue::from_str("Engine already initialized"));
+        }
+
+        console::log_1(&"Initializing StormCore engine".into());
 
         let storm_config: StormConfig = config.into();
-
-        // Create the engine instance
-        let engine = StormCore::new(storm_config)
+        let core = StormCore::new(storm_config)
             .await
-            .map_err(|e| JsValue::from_str(&format!("Failed to initialize StormCore: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Initialization failed: {}", e)))?;
 
-        // Store in global state
-        let mut global_engine = ENGINE.lock().unwrap();
-        *global_engine = Some(engine);
+        let mut engine = ENGINE.lock().unwrap();
+        *engine = Some(core);
 
         self.initialized = true;
         console::log_1(&"StormCore engine initialized successfully".into());
@@ -136,52 +141,15 @@ impl WasmStormEngine {
         Ok(())
     }
 
-    /// Connect to a virtual world
+    /// Update the engine (call this in your animation loop)
     #[wasm_bindgen]
-    pub async fn connect_to_world(&self, world_url: &str, protocol: &str) -> Result<(), JsValue> {
+    pub async fn update(&self, delta_time: f32) -> Result<(), JsValue> {
         if !self.initialized {
             return Err(JsValue::from_str("Engine not initialized"));
         }
 
-        console::log_2(&"Connecting to world:".into(), &world_url.into());
-
-        // Parse protocol type
-        let protocol_type = match protocol.to_lowercase().as_str() {
-            "opensim" | "mutsea" => storm_core::ProtocolType::OpenSim,
-            "finalverse" => storm_core::ProtocolType::Finalverse,
-            _ => return Err(JsValue::from_str("Unsupported protocol")),
-        };
-
-        let world_config = storm_core::WorldConfig {
-            name: "WASM World".to_string(),
-            url: world_url.to_string(),
-            protocol: protocol_type,
-            credentials: None,
-        };
-
-        // Connect using global engine
         let engine = ENGINE.lock().unwrap();
-        if let Some(ref engine) = *engine {
-            engine.connect_to_world(&world_config)
-                .await
-                .map_err(|e| JsValue::from_str(&format!("Failed to connect: {}", e)))?;
-        } else {
-            return Err(JsValue::from_str("Engine not available"));
-        }
-
-        console::log_1(&"Successfully connected to world".into());
-        Ok(())
-    }
-
-    /// Update engine (call this from requestAnimationFrame)
-    #[wasm_bindgen]
-    pub async fn update(&self, delta_time: f32) -> Result<(), JsValue> {
-        if !self.initialized {
-            return Ok(()); // Silently skip if not initialized
-        }
-
-        let engine = ENGINE.lock().unwrap();
-        if let Some(ref engine) = *engine {
+        if let Some(engine) = engine.as_ref() {
             engine.update(delta_time)
                 .await
                 .map_err(|e| JsValue::from_str(&format!("Update failed: {}", e)))?;
@@ -190,15 +158,14 @@ impl WasmStormEngine {
         Ok(())
     }
 
-    /// Get engine statistics as JSON
+    /// Get engine statistics
     #[wasm_bindgen]
     pub fn get_stats(&self) -> Result<JsValue, JsValue> {
         if !self.initialized {
             return Err(JsValue::from_str("Engine not initialized"));
         }
 
-        // Create stats object
-        let stats = js_sys::Object::new();
+        let stats = Object::new();
         Reflect::set(&stats, &"fps".into(), &60.0.into())?;
         Reflect::set(&stats, &"entities".into(), &0.into())?;
         Reflect::set(&stats, &"memory_mb".into(), &0.0.into())?;
@@ -266,7 +233,7 @@ impl WasmEntity {
         }
     }
 
-    // Rotation getters/setters  
+    // Rotation getters/setters
     #[wasm_bindgen(getter)]
     pub fn rotation(&self) -> Vec<f32> {
         self.rotation.to_vec()
@@ -301,6 +268,11 @@ impl WasmEntity {
     pub fn set_name(&mut self, name: &str) {
         self.name = name.to_string();
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn id(&self) -> u64 {
+        self.id
+    }
 }
 
 /// Utility functions for WASM environment
@@ -333,8 +305,44 @@ pub fn get_canvas_context(canvas_id: &str) -> Result<WebGlRenderingContext, JsVa
         .map_err(|_| JsValue::from_str("Failed to get WebGL context"))
 }
 
+/// Request animation frame helper (using window.setTimeout as fallback)
+#[wasm_bindgen]
+pub fn request_animation_frame(callback: &js_sys::Function) -> Result<i32, JsValue> {
+    // Since RequestAnimationFrame isn't available in older web-sys versions,
+    // we'll use a setTimeout with 16ms delay (roughly 60fps)
+    window()
+        .unwrap()
+        .set_timeout_with_callback_and_timeout_and_arguments_0(callback, 16)
+}
+
 /// Export version information
 #[wasm_bindgen]
 pub fn get_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    fn test_wasm_entity_creation() {
+        let entity = WasmEntity::new("test_entity");
+        assert_eq!(entity.name(), "test_entity");
+        assert_eq!(entity.position(), vec![0.0, 0.0, 0.0]);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_config_creation() {
+        let config = WasmStormConfig::new();
+        assert!(config.enable_rendering());
+        assert!(config.enable_audio());
+    }
+
+    #[wasm_bindgen_test]
+    fn test_version() {
+        let version = get_version();
+        assert!(!version.is_empty());
+    }
 }

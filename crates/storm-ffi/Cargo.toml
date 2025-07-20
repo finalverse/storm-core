@@ -7,6 +7,11 @@ authors.workspace = true
 license.workspace = true
 description = "FFI bindings infrastructure for StormCore"
 
+# Add this section to generate .dylib.
+[lib]
+crate-type = ["cdylib"]  # For dynamic library; use "staticlib" if you prefer .a only.
+# crate-type = ["staticlib"]  # For dynamic library; use "staticlib" if you prefer .a only.
+
 [dependencies]
 storm-core = { path = "../storm-core" }
 storm-ecs = { path = "../storm-ecs" }

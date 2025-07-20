@@ -1,5 +1,5 @@
-// File: crates/storm-ecs/src/lib.rs
-// Entity-Component-System implementation for StormCore
+// File: storm-core/crates/storm-ecs/src/lib.rs
+// Description: Entity-Component-System implementation for StormCore
 // High-performance world simulation with AI integration
 
 use serde::{Deserialize, Serialize};
@@ -261,6 +261,35 @@ impl Component for Velocity {
     }
 }
 
+/// Delta time resource for systems
+#[derive(Debug, Clone, Copy)]
+pub struct DeltaTime(pub f32);
+
+/// Resources container for global data
+pub struct Resources {
+    resources: HashMap<TypeId, Box<dyn Any + Send + Sync>>,
+}
+
+impl Resources {
+    pub fn new() -> Self {
+        Self {
+            resources: HashMap::new(),
+        }
+    }
+
+    pub fn insert<T: 'static + Send + Sync>(&mut self, resource: T) {
+        self.resources.insert(TypeId::of::<T>(), Box::new(resource));
+    }
+
+    pub fn get<T: 'static>(&self) -> Option<&T> {
+        self.resources.get(&TypeId::of::<T>())?.downcast_ref::<T>()
+    }
+
+    pub fn get_mut<T: 'static>(&mut self) -> Option<&mut T> {
+        self.resources.get_mut(&TypeId::of::<T>())?.downcast_mut::<T>()
+    }
+}
+
 /// Simple protocol type for this crate
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProtocolType {
@@ -335,6 +364,15 @@ impl System for MovementSystem {
     }
 }
 
+/// Commonly used types and traits for easy importing
+pub mod prelude {
+    pub use crate::{
+        Component, Entity, EntityId, System, World,
+        Transform, Velocity, WorldInfo, WorldConfig, ProtocolType,
+        TransformSystem, MovementSystem, DeltaTime, Resources,
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -395,5 +433,25 @@ mod tests {
         // Check that position was updated
         let transform = world.get_component::<Transform>(entity).unwrap();
         assert_eq!(transform.position[0], 1.0);
+    }
+
+    #[test]
+    fn test_resources() {
+        let mut resources = Resources::new();
+        resources.insert(DeltaTime(0.016));
+
+        let delta = resources.get::<DeltaTime>().unwrap();
+        assert_eq!(delta.0, 0.016);
+    }
+
+    #[test]
+    fn test_prelude_import() {
+        use crate::prelude::*;
+
+        let mut world = World::new();
+        let entity = world.create_entity();
+        world.add_component(entity, Transform::default());
+
+        assert!(world.has_component::<Transform>(entity));
     }
 }

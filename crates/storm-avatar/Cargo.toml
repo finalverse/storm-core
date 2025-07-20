@@ -1,0 +1,36 @@
+# File: crates/storm-avatar/Cargo.toml
+# Description: Avatar system crate configuration
+# Handles avatar creation, customization, and management
+
+[package]
+name = "storm-avatar"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Internal dependencies
+storm-ecs = { workspace = true }
+storm-math = { workspace = true }
+storm-assets = { workspace = true }
+storm-ai = { workspace = true }
+
+# External dependencies
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+glam = { workspace = true }
+dashmap = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+rand = { workspace = true }
+noise = { workspace = true }
+ordered-float = { workspace = true }
+bincode = "1.3.3"
+
+[dev-dependencies]
+criterion = { workspace = true }
+mockall = { workspace = true }

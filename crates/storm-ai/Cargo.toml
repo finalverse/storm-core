@@ -26,6 +26,7 @@ reqwest = { workspace = true, features = ["json"] }
 # Utilities
 uuid.workspace = true
 once_cell.workspace = true
+async-trait = "0.1.88"
 
 # For WASM compatibility
 [target.'cfg(target_arch = "wasm32")'.dependencies]

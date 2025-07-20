@@ -29,6 +29,7 @@ pub struct StormConfig {
     // Platform-specific settings
     pub platform: PlatformType,
     pub debug_mode: bool,
+    pub enable_ai: bool,
 }
 
 impl Default for StormConfig {
@@ -42,6 +43,7 @@ impl Default for StormConfig {
             enable_rendering: true,
             enable_audio: true,
             enable_physics: true,
+            enable_ai: true,
             enable_ai_enhanced: true,
             platform: PlatformType::detect(),
             debug_mode: cfg!(debug_assertions),

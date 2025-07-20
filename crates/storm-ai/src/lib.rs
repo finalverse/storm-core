@@ -1,6 +1,6 @@
 // File: crates/storm-ai/src/lib.rs
 // AI Dispatcher and ML models for StormCore
-// Fixed RwLock usage and removed unused imports
+// Fixed imports and added missing prelude module
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -16,6 +16,14 @@ pub mod local_ml;
 
 pub use dispatcher::*;
 pub use models::*;
+
+// Add prelude module for easy imports
+pub mod prelude {
+    pub use crate::{
+        AIDispatcher, AIConfig, AIRequest, AIResponse, AITier, TaskType, AIContext,
+        create_ai_request, GenerationParams, AIClient, AIModel,
+    };
+}
 
 /// AI system configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,6 +117,38 @@ pub struct AIMetrics {
 }
 
 type ResponseCallback = Box<dyn Fn(AIResponse) + Send + Sync>;
+
+/// Generation parameters for AI content generation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GenerationParams {
+    pub max_tokens: Option<u32>,
+    pub temperature: Option<f32>,
+    pub top_p: Option<f32>,
+    pub stop_sequences: Option<Vec<String>>,
+}
+
+impl Default for GenerationParams {
+    fn default() -> Self {
+        Self {
+            max_tokens: Some(150),
+            temperature: Some(0.7),
+            top_p: Some(0.9),
+            stop_sequences: None,
+        }
+    }
+}
+
+/// AI Client trait for external AI services
+#[async_trait::async_trait]
+pub trait AIClient: Send + Sync {
+    async fn generate(&self, prompt: String, params: GenerationParams) -> Result<String>;
+}
+
+/// AI Model trait for ML models
+#[async_trait::async_trait]
+pub trait AIModel: Send + Sync {
+    async fn predict(&self, input: &[f32]) -> Result<Vec<f32>>;
+}
 
 impl AIDispatcher {
     pub async fn new(config: &AIConfig) -> Result<Self> {
@@ -252,7 +292,7 @@ impl AIDispatcher {
             confidence: 0.8, // Placeholder
         };
 
-        // Call response handler - fixed RwLock usage
+        // Call response handler
         {
             let handlers_guard = handlers.read().await;
             if let Some(handler) = handlers_guard.get(&request.id) {
@@ -260,7 +300,7 @@ impl AIDispatcher {
             }
         }
 
-        // Remove handler - fixed RwLock usage
+        // Remove handler
         {
             let mut handlers_guard = handlers.write().await;
             handlers_guard.remove(&request.id);

@@ -12,11 +12,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # Core StormCore dependencies
-storm-core = { path = "../storm-core", default-features = false, features = ["wasm-target"] }
-storm-ecs = { path = "../storm-ecs" }
-storm-ai = { path = "../storm-ai", features = ["wasm"] }
-storm-math = { path = "../storm-math" }
-storm-assets = { path = "../storm-assets" }
+storm-core = { workspace = true, default-features = true, features = ["wasm-target"] }
+storm-ecs = { workspace = true }
+storm-ai = { workspace = true, features = ["wasm"] }
+storm-math = { workspace = true }
+storm-assets = { workspace = true }
 
 # WebAssembly specific dependencies
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
@@ -39,7 +39,6 @@ web-sys = { version = "0.3", features = [
     "Performance",
     "PerformanceEntry",
     "PerformanceMeasure",
-    "RequestAnimationFrame",
     "AudioContext",
     "AudioBuffer",
     "AudioBufferSourceNode",
@@ -75,6 +74,7 @@ tracing-wasm = "0.2"
 
 # Random number generation for WASM
 getrandom = { version = "0.2", features = ["js"] }
+once_cell = "1.21.3"
 
 [features]
 default = ["panic-hook", "wee-alloc", "enhanced-audio"]
