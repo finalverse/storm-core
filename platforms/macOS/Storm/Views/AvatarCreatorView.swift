@@ -49,7 +49,7 @@ struct AvatarCreatorView: View {
     @EnvironmentObject var stormEngine: StormEngine
     @Environment(\.presentationMode) var presentationMode
     
-    @State private var selectedArchetype: AvatarArchetype = .human
+    @State private var selectedArchetype: AvatarCreatorArchetype = .human
     @State private var selectedPreset: AvatarPreset = .balanced
     @State private var avatarName = ""
     @State private var isCreating = false
@@ -144,7 +144,7 @@ struct AvatarCreatorView: View {
                     .foregroundColor(.secondary)
                 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
-                    ForEach(AvatarArchetype.allCases, id: \.self) { archetype in
+                    ForEach(AvatarCreatorArchetype.allCases, id: \.self) { archetype in
                         ArchetypeCard(
                             archetype: archetype,
                             isSelected: selectedArchetype == archetype
@@ -157,7 +157,7 @@ struct AvatarCreatorView: View {
             }
             
             // Echo Configuration (shown only for Echo and Hybrid types)
-            if selectedArchetype == AvatarArchetype.echo || selectedArchetype == AvatarArchetype.hybrid {
+            if selectedArchetype == AvatarCreatorArchetype.echo || selectedArchetype == AvatarCreatorArchetype.hybrid {
                 stormEchoConfigurationSection
             }
             
@@ -301,9 +301,9 @@ struct AvatarCreatorView: View {
             
             // 3D Preview - Fixed RealityViewContent scope issue
             RealityView { content in
-                await setupPreview(content: content)
+                Task { await setupPreview(content: content) }
             } update: { content in
-                await updatePreview(content: content)
+                Task { await updatePreview(content: content) }
             }
             .background(Color.black.opacity(0.05))
             .cornerRadius(12)
@@ -472,7 +472,7 @@ struct AvatarCreatorView: View {
         let backgroundMesh = MeshResource.generateSphere(radius: 10)
         var backgroundMaterial = UnlitMaterial()
         // Fixed: Use ciColor instead of tint
-        backgroundMaterial.color = .init(tint: .init(red: 0.15, green: 0.15, blue: 0.2, alpha: 1.0))
+        backgroundMaterial.color = .init(ciColor: .init(red: 0.15, green: 0.15, blue: 0.2, alpha: 1.0))
         
         let backgroundModel = ModelEntity(mesh: backgroundMesh, materials: [backgroundMaterial])
         backgroundModel.scale = simd_float3(-1, 1, -1)
@@ -514,7 +514,7 @@ struct AvatarCreatorView: View {
         await createAvatarMesh(entity: avatarEntity)
         
         // Add storm echo component if needed
-        if selectedArchetype == AvatarArchetype.echo || selectedArchetype == AvatarArchetype.hybrid {
+        if selectedArchetype == AvatarCreatorArchetype.echo || selectedArchetype == AvatarCreatorArchetype.hybrid {
             let stormEchoComponent = StormEchoComponent(
                 echoType: selectedStormEchoType,
                 intensity: stormEchoIntensity,
@@ -534,7 +534,7 @@ struct AvatarCreatorView: View {
         headEntity.name = "Head"
         let headMesh = MeshResource.generateSphere(radius: 0.15)
         // Fixed: Use ciColor instead of tint
-        let headMaterial = SimpleMaterial(color: .init(tint: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
+        let headMaterial = SimpleMaterial(color: .init(ciColor: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
         let headModel = ModelEntity(mesh: headMesh, materials: [headMaterial])
         headModel.position.y = 1.75
         headEntity.addChild(headModel)
@@ -544,7 +544,7 @@ struct AvatarCreatorView: View {
         bodyEntity.name = "Body"
         let bodyMesh = MeshResource.generateCylinder(height: 1.2, radius: 0.25)
         // Fixed: Use ciColor instead of tint
-        let bodyMaterial = SimpleMaterial(color: .init(tint: .init(red: 0.7, green: 0.5, blue: 0.3, alpha: 1.0)), isMetallic: false)
+        let bodyMaterial = SimpleMaterial(color: .init(ciColor: .init(red: 0.7, green: 0.5, blue: 0.3, alpha: 1.0)), isMetallic: false)
         let bodyModel = ModelEntity(mesh: bodyMesh, materials: [bodyMaterial])
         bodyModel.position.y = 1.0
         bodyEntity.addChild(bodyModel)
@@ -554,7 +554,7 @@ struct AvatarCreatorView: View {
         leftArmEntity.name = "LeftArm"
         let armMesh = MeshResource.generateCylinder(height: 0.8, radius: 0.08)
         // Fixed: Use ciColor instead of tint
-        let armMaterial = SimpleMaterial(color: .init(tint: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
+        let armMaterial = SimpleMaterial(color: .init(ciColor: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
         let leftArmModel = ModelEntity(mesh: armMesh, materials: [armMaterial])
         leftArmModel.position = simd_float3(-0.35, 1.3, 0)
         leftArmModel.orientation = simd_quatf(angle: .pi/8, axis: [0, 0, 1])
@@ -572,7 +572,7 @@ struct AvatarCreatorView: View {
         leftLegEntity.name = "LeftLeg"
         let legMesh = MeshResource.generateCylinder(height: 1.0, radius: 0.1)
         // Fixed: Use ciColor instead of tint
-        let legMaterial = SimpleMaterial(color: .init(tint: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
+        let legMaterial = SimpleMaterial(color: .init(ciColor: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
         let leftLegModel = ModelEntity(mesh: legMesh, materials: [legMaterial])
         leftLegModel.position = simd_float3(-0.12, 0.4, 0)
         leftLegEntity.addChild(leftLegModel)
@@ -732,7 +732,7 @@ struct AvatarCreatorView: View {
     
     private func generateAIAvatar() {
         // AI avatar generation with procedural selection
-        selectedArchetype = AvatarArchetype.allCases.randomElement() ?? .human
+        selectedArchetype = AvatarCreatorArchetype.allCases.randomElement() ?? .human
         selectedPreset = presetsForArchetype.randomElement() ?? .balanced
         
         if selectedArchetype == .echo || selectedArchetype == .hybrid {
@@ -767,7 +767,7 @@ struct AvatarCreatorView: View {
 
 // MARK: - Supporting Types
 
-enum AvatarArchetype: String, CaseIterable {
+enum AvatarCreatorArchetype: String, CaseIterable {
     case human = "Human"
     case echo = "Echo"
     case hybrid = "Hybrid"
@@ -844,7 +844,7 @@ enum AvatarPreset: String, CaseIterable {
 // MARK: - UI Components
 
 struct ArchetypeCard: View {
-    let archetype: AvatarArchetype
+    let archetype: AvatarCreatorArchetype
     let isSelected: Bool
     let onSelect: () -> Void
     
