@@ -299,11 +299,11 @@ struct AvatarCreatorView: View {
             }
             .padding(.top)
             
-            // 3D Preview - Fixed RealityViewContent scope issue
-            RealityView { content in
-                Task { await setupPreview(content: content) }
-            } update: { content in
-                Task { await updatePreview(content: content) }
+            // 3D Preview - use RealityView scene for setup and updates
+            RealityView { scene in
+                Task { await setupPreview(scene: scene) }
+            } update: { scene in
+                Task { await updatePreview(scene: scene) }
             }
             .background(Color.black.opacity(0.05))
             .cornerRadius(12)
@@ -461,52 +461,51 @@ struct AvatarCreatorView: View {
         return AvatarCustomization(traits: traits)
     }
     
-    // MARK: - Preview Rendering (Fixed RealityViewContent scope)
-    
+    // MARK: - Preview Rendering using RealityView scene
+
     @MainActor
-    private func setupPreview(content: RealityViewContent) async {
+    private func setupPreview(scene: RealityViewScene) async {
         // Create preview environment
-        let backgroundEntity = Entity()
+        let backgroundEntity = AnchorEntity()
         backgroundEntity.name = "PreviewBackground"
         
         let backgroundMesh = MeshResource.generateSphere(radius: 10)
         var backgroundMaterial = UnlitMaterial()
-        // Fixed: Use ciColor instead of tint
-        backgroundMaterial.color = .init(ciColor: .init(red: 0.15, green: 0.15, blue: 0.2, alpha: 1.0))
+        backgroundMaterial.color = .init(red: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         
         let backgroundModel = ModelEntity(mesh: backgroundMesh, materials: [backgroundMaterial])
         backgroundModel.scale = simd_float3(-1, 1, -1)
         
         backgroundEntity.addChild(backgroundModel)
-        content.add(backgroundEntity)
+        scene.addAnchor(backgroundEntity)
         
         // Add lighting
-        let lightEntity = Entity()
+        let lightEntity = AnchorEntity()
         lightEntity.name = "PreviewLight"
         
         let light = DirectionalLightComponent(color: .white, intensity: 2000)
         lightEntity.components.set(light)
         lightEntity.orientation = simd_quatf(angle: .pi/4, axis: [1, -0.2, 0])
         
-        content.add(lightEntity)
+        scene.addAnchor(lightEntity)
         
         // Create preview avatar if we have one
         if let avatarId = previewAvatarId {
-            await createPreviewAvatarEntity(id: avatarId, content: content)
+            await createPreviewAvatarEntity(id: avatarId, scene: scene)
         }
     }
-    
+
     @MainActor
-    private func updatePreview(content: RealityViewContent) async {
+    private func updatePreview(scene: RealityViewScene) async {
         // Update avatar appearance
-        if let avatarEntity = content.entities.first(where: { $0.name == "PreviewAvatar" }) {
+        if let avatarEntity = scene.anchors.first(where: { $0.name == "PreviewAvatar" }) {
             await updatePreviewAvatarAppearance(avatarEntity)
         }
     }
-    
+
     @MainActor
-    private func createPreviewAvatarEntity(id: UInt64, content: RealityViewContent) async {
-        let avatarEntity = Entity()
+    private func createPreviewAvatarEntity(id: UInt64, scene: RealityViewScene) async {
+        let avatarEntity = AnchorEntity()
         avatarEntity.name = "PreviewAvatar"
         avatarEntity.position = simd_float3(0, -0.5, -2)
         
@@ -524,7 +523,7 @@ struct AvatarCreatorView: View {
             avatarEntity.components.set(stormEchoComponent)
         }
         
-        content.add(avatarEntity)
+        scene.addAnchor(avatarEntity)
     }
     
     @MainActor
@@ -533,8 +532,7 @@ struct AvatarCreatorView: View {
         let headEntity = Entity()
         headEntity.name = "Head"
         let headMesh = MeshResource.generateSphere(radius: 0.15)
-        // Fixed: Use ciColor instead of tint
-        let headMaterial = SimpleMaterial(color: .init(ciColor: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
+        let headMaterial = SimpleMaterial(color: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0), isMetallic: false)
         let headModel = ModelEntity(mesh: headMesh, materials: [headMaterial])
         headModel.position.y = 1.75
         headEntity.addChild(headModel)
@@ -543,8 +541,7 @@ struct AvatarCreatorView: View {
         let bodyEntity = Entity()
         bodyEntity.name = "Body"
         let bodyMesh = MeshResource.generateCylinder(height: 1.2, radius: 0.25)
-        // Fixed: Use ciColor instead of tint
-        let bodyMaterial = SimpleMaterial(color: .init(ciColor: .init(red: 0.7, green: 0.5, blue: 0.3, alpha: 1.0)), isMetallic: false)
+        let bodyMaterial = SimpleMaterial(color: .init(red: 0.7, green: 0.5, blue: 0.3, alpha: 1.0), isMetallic: false)
         let bodyModel = ModelEntity(mesh: bodyMesh, materials: [bodyMaterial])
         bodyModel.position.y = 1.0
         bodyEntity.addChild(bodyModel)
@@ -553,8 +550,7 @@ struct AvatarCreatorView: View {
         let leftArmEntity = Entity()
         leftArmEntity.name = "LeftArm"
         let armMesh = MeshResource.generateCylinder(height: 0.8, radius: 0.08)
-        // Fixed: Use ciColor instead of tint
-        let armMaterial = SimpleMaterial(color: .init(ciColor: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
+        let armMaterial = SimpleMaterial(color: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0), isMetallic: false)
         let leftArmModel = ModelEntity(mesh: armMesh, materials: [armMaterial])
         leftArmModel.position = simd_float3(-0.35, 1.3, 0)
         leftArmModel.orientation = simd_quatf(angle: .pi/8, axis: [0, 0, 1])
@@ -571,8 +567,7 @@ struct AvatarCreatorView: View {
         let leftLegEntity = Entity()
         leftLegEntity.name = "LeftLeg"
         let legMesh = MeshResource.generateCylinder(height: 1.0, radius: 0.1)
-        // Fixed: Use ciColor instead of tint
-        let legMaterial = SimpleMaterial(color: .init(ciColor: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
+        let legMaterial = SimpleMaterial(color: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0), isMetallic: false)
         let leftLegModel = ModelEntity(mesh: legMesh, materials: [legMaterial])
         leftLegModel.position = simd_float3(-0.12, 0.4, 0)
         leftLegEntity.addChild(leftLegModel)
@@ -619,44 +614,51 @@ struct AvatarCreatorView: View {
                 
                 switch selectedStormEchoType {
                 case .hope:
-                    // Fixed: Use tint instead of ciColor
+                    let alpha = Double(0.7 + glowIntensity * 0.3)
                     newMaterial = SimpleMaterial(
-                        color: .init(tint: .init(red: 1.0, green: 1.0, blue: 0.8, alpha: 0.7 + glowIntensity * 0.3)),
+                        color: .init(red: 1.0, green: 1.0, blue: 0.8, alpha: alpha),
                         isMetallic: false
                     )
                 case .wisdom:
+                    let alpha = Double(0.7 + glowIntensity * 0.3)
                     newMaterial = SimpleMaterial(
-                        color: .init(tint: .init(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.7 + glowIntensity * 0.3)),
+                        color: .init(red: 0.6, green: 0.8, blue: 1.0, alpha: alpha),
                         isMetallic: false
                     )
                 case .memory:
+                    let alpha = Double(0.6 + glowIntensity * 0.4)
                     newMaterial = SimpleMaterial(
-                        color: .init(tint: .init(red: 0.8, green: 0.6, blue: 1.0, alpha: 0.6 + glowIntensity * 0.4)),
+                        color: .init(red: 0.8, green: 0.6, blue: 1.0, alpha: alpha),
                         isMetallic: false
                     )
                 case .logic:
+                    let alpha = Double(0.8 + glowIntensity * 0.2)
                     newMaterial = SimpleMaterial(
-                        color: .init(tint: .init(red: 0.4, green: 1.0, blue: 0.8, alpha: 0.8 + glowIntensity * 0.2)),
+                        color: .init(red: 0.4, green: 1.0, blue: 0.8, alpha: alpha),
                         isMetallic: true
                     )
                 case .dreams:
+                    let alpha = Double(0.5 + glowIntensity * 0.5)
                     newMaterial = SimpleMaterial(
-                        color: .init(tint: .init(red: 1.0, green: 0.7, blue: 0.9, alpha: 0.5 + glowIntensity * 0.5)),
+                        color: .init(red: 1.0, green: 0.7, blue: 0.9, alpha: alpha),
                         isMetallic: false
                     )
                 case .protection:
+                    let alpha = Double(0.8 + glowIntensity * 0.2)
                     newMaterial = SimpleMaterial(
-                        color: .init(tint: .init(red: 0.8, green: 0.8, blue: 0.8, alpha: 0.8 + glowIntensity * 0.2)),
+                        color: .init(red: 0.8, green: 0.8, blue: 0.8, alpha: alpha),
                         isMetallic: true
                     )
                 case .discovery:
+                    let alpha = Double(0.7 + glowIntensity * 0.3)
                     newMaterial = SimpleMaterial(
-                        color: .init(tint: .init(red: 1.0, green: 0.6, blue: 0.2, alpha: 0.7 + glowIntensity * 0.3)),
+                        color: .init(red: 1.0, green: 0.6, blue: 0.2, alpha: alpha),
                         isMetallic: false
                     )
                 case .creation:
+                    let alpha = Double(0.7 + glowIntensity * 0.3)
                     newMaterial = SimpleMaterial(
-                        color: .init(tint: .init(red: 0.6, green: 1.0, blue: 0.6, alpha: 0.7 + glowIntensity * 0.3)),
+                        color: .init(red: 0.6, green: 1.0, blue: 0.6, alpha: alpha),
                         isMetallic: false
                     )
                 }
@@ -679,12 +681,11 @@ struct AvatarCreatorView: View {
             duration: 2.0,
             timing: .easeInOut,
             isAdditive: false,
-            bindTarget: .transform,
-            repeatMode: .repeating
+            bindTarget: .transform
         )
-        
+
         if let resource = try? AnimationResource.generate(with: floatAnimation) {
-            entity.playAnimation(resource)
+            entity.playAnimation(resource.repeat())
         }
     }
     
