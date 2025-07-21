@@ -7,124 +7,77 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B4D5E3D42E2CF18900AC10F0 /* libstorm_ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B4D5E3D32E2CF18900AC10F0 /* libstorm_ffi.dylib */; };
-		B4D5E3DC2E2D385300AC10F0 /* StormFFIBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D5E3DB2E2D385300AC10F0 /* StormFFIBridge.swift */; };
-		B4D5E3DE2E2D388100AC10F0 /* NetworkingClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D5E3DD2E2D388100AC10F0 /* NetworkingClient.swift */; };
-		B4D5E3E12E2D38AD00AC10F0 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D5E3E02E2D38AD00AC10F0 /* MainView.swift */; };
-		B4D5E3E32E2D38D400AC10F0 /* AvatarCustomizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D5E3E22E2D38D400AC10F0 /* AvatarCustomizationView.swift */; };
-		B4D5E3E52E2D38F800AC10F0 /* WorldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D5E3E42E2D38F800AC10F0 /* WorldView.swift */; };
-		B4D5E3E82E2D391500AC10F0 /* StormRenderSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D5E3E72E2D391500AC10F0 /* StormRenderSystem.swift */; };
+		B49357502E2E5CB3007B9D15 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = B493574F2E2E5CB3007B9D15 /* README.md */; };
+		B493576F2E2E77FC007B9D15 /* libstorm_ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B493576E2E2E77FC007B9D15 /* libstorm_ffi.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B4D5D6ED2E2CE04000AC10F0 /* Storm.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Storm.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B4D5E3D32E2CF18900AC10F0 /* libstorm_ffi.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libstorm_ffi.dylib; path = ../../libs/libstorm_ffi.dylib; sourceTree = "<group>"; };
-		B4D5E3DB2E2D385300AC10F0 /* StormFFIBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormFFIBridge.swift; sourceTree = "<group>"; };
-		B4D5E3DD2E2D388100AC10F0 /* NetworkingClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingClient.swift; sourceTree = "<group>"; };
-		B4D5E3E02E2D38AD00AC10F0 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
-		B4D5E3E22E2D38D400AC10F0 /* AvatarCustomizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarCustomizationView.swift; sourceTree = "<group>"; };
-		B4D5E3E42E2D38F800AC10F0 /* WorldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldView.swift; sourceTree = "<group>"; };
-		B4D5E3E72E2D391500AC10F0 /* StormRenderSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormRenderSystem.swift; sourceTree = "<group>"; };
+		B493573B2E2E5AF4007B9D15 /* Storm.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Storm.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B493574F2E2E5CB3007B9D15 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		B493576E2E2E77FC007B9D15 /* libstorm_ffi.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libstorm_ffi.dylib; path = ../../libs/libstorm_ffi.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		B4D5D6EF2E2CE04000AC10F0 /* App */ = {
+		B493573C2E2E5AF4007B9D15 /* Storm */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = App;
+			path = Storm;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		B4D5D6EA2E2CE04000AC10F0 /* Frameworks */ = {
+		B49357382E2E5AF4007B9D15 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B4D5E3D42E2CF18900AC10F0 /* libstorm_ffi.dylib in Frameworks */,
+				B493576F2E2E77FC007B9D15 /* libstorm_ffi.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		B4D5D6E42E2CE04000AC10F0 = {
+		B493576D2E2E77FB007B9D15 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B4D5E3E62E2D390600AC10F0 /* RealityKit */,
-				B4D5E3DF2E2D389800AC10F0 /* Views */,
-				B4D5E3DA2E2D31D400AC10F0 /* Core */,
-				B4D5D6EF2E2CE04000AC10F0 /* App */,
-				B4D5E3CF2E2CE19F00AC10F0 /* Frameworks */,
-				B4D5D6EE2E2CE04000AC10F0 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		B4D5D6EE2E2CE04000AC10F0 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				B4D5D6ED2E2CE04000AC10F0 /* Storm.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		B4D5E3CF2E2CE19F00AC10F0 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				B4D5E3D32E2CF18900AC10F0 /* libstorm_ffi.dylib */,
+				B493576E2E2E77FC007B9D15 /* libstorm_ffi.dylib */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		B4D5E3DA2E2D31D400AC10F0 /* Core */ = {
+		B4D5D6E42E2CE04000AC10F0 = {
 			isa = PBXGroup;
 			children = (
-				B4D5E3DB2E2D385300AC10F0 /* StormFFIBridge.swift */,
-				B4D5E3DD2E2D388100AC10F0 /* NetworkingClient.swift */,
+				B493574F2E2E5CB3007B9D15 /* README.md */,
+				B493573B2E2E5AF4007B9D15 /* Storm.app */,
+				B493573C2E2E5AF4007B9D15 /* Storm */,
+				B493576D2E2E77FB007B9D15 /* Frameworks */,
 			);
-			path = Core;
-			sourceTree = "<group>";
-		};
-		B4D5E3DF2E2D389800AC10F0 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				B4D5E3E02E2D38AD00AC10F0 /* MainView.swift */,
-				B4D5E3E22E2D38D400AC10F0 /* AvatarCustomizationView.swift */,
-				B4D5E3E42E2D38F800AC10F0 /* WorldView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		B4D5E3E62E2D390600AC10F0 /* RealityKit */ = {
-			isa = PBXGroup;
-			children = (
-				B4D5E3E72E2D391500AC10F0 /* StormRenderSystem.swift */,
-			);
-			path = RealityKit;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B4D5D6EC2E2CE04000AC10F0 /* Storm */ = {
+		B493573A2E2E5AF4007B9D15 /* Storm */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B4D5D6F92E2CE04200AC10F0 /* Build configuration list for PBXNativeTarget "Storm" */;
+			buildConfigurationList = B49357462E2E5AF5007B9D15 /* Build configuration list for PBXNativeTarget "Storm" */;
 			buildPhases = (
-				B4D5D6E92E2CE04000AC10F0 /* Sources */,
-				B4D5D6EA2E2CE04000AC10F0 /* Frameworks */,
-				B4D5D6EB2E2CE04000AC10F0 /* Resources */,
+				B49357372E2E5AF4007B9D15 /* Sources */,
+				B49357382E2E5AF4007B9D15 /* Frameworks */,
+				B49357392E2E5AF4007B9D15 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				B4D5D6EF2E2CE04000AC10F0 /* App */,
+				B493573C2E2E5AF4007B9D15 /* Storm */,
 			);
 			name = Storm;
 			packageProductDependencies = (
 			);
 			productName = Storm;
-			productReference = B4D5D6ED2E2CE04000AC10F0 /* Storm.app */;
+			productReference = B493573B2E2E5AF4007B9D15 /* Storm.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -137,7 +90,7 @@
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
-					B4D5D6EC2E2CE04000AC10F0 = {
+					B493573A2E2E5AF4007B9D15 = {
 						CreatedOnToolsVersion = 16.3;
 					};
 				};
@@ -152,42 +105,91 @@
 			mainGroup = B4D5D6E42E2CE04000AC10F0;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = B4D5D6EE2E2CE04000AC10F0 /* Products */;
+			productRefGroup = B4D5D6E42E2CE04000AC10F0;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B4D5D6EC2E2CE04000AC10F0 /* Storm */,
+				B493573A2E2E5AF4007B9D15 /* Storm */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		B4D5D6EB2E2CE04000AC10F0 /* Resources */ = {
+		B49357392E2E5AF4007B9D15 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B49357502E2E5CB3007B9D15 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		B4D5D6E92E2CE04000AC10F0 /* Sources */ = {
+		B49357372E2E5AF4007B9D15 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B4D5E3DE2E2D388100AC10F0 /* NetworkingClient.swift in Sources */,
-				B4D5E3E52E2D38F800AC10F0 /* WorldView.swift in Sources */,
-				B4D5E3DC2E2D385300AC10F0 /* StormFFIBridge.swift in Sources */,
-				B4D5E3E82E2D391500AC10F0 /* StormRenderSystem.swift in Sources */,
-				B4D5E3E32E2D38D400AC10F0 /* AvatarCustomizationView.swift in Sources */,
-				B4D5E3E12E2D38AD00AC10F0 /* MainView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		B49357472E2E5AF5007B9D15 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Storm/Storm.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2F3E73M8TT;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.finalverse.Storm;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B49357482E2E5AF5007B9D15 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Storm/Storm.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2F3E73M8TT;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.finalverse.Storm;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		B4D5D6F72E2CE04200AC10F0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -308,81 +310,23 @@
 			};
 			name = Release;
 		};
-		B4D5D6FA2E2CE04200AC10F0 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = App/Storm.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2F3E73M8TT;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../../libs";
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.finalverse.Storm;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "App/Storm-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		B4D5D6FB2E2CE04200AC10F0 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = App/Storm.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2F3E73M8TT;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../../libs";
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.finalverse.Storm;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "App/Storm-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		B49357462E2E5AF5007B9D15 /* Build configuration list for PBXNativeTarget "Storm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B49357472E2E5AF5007B9D15 /* Debug */,
+				B49357482E2E5AF5007B9D15 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		B4D5D6E82E2CE04000AC10F0 /* Build configuration list for PBXProject "Storm" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B4D5D6F72E2CE04200AC10F0 /* Debug */,
 				B4D5D6F82E2CE04200AC10F0 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		B4D5D6F92E2CE04200AC10F0 /* Build configuration list for PBXNativeTarget "Storm" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				B4D5D6FA2E2CE04200AC10F0 /* Debug */,
-				B4D5D6FB2E2CE04200AC10F0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
