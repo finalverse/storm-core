@@ -14,7 +14,7 @@ class StormEngine: ObservableObject {
     @Published var isInitialized = false
     @Published var connectedWorlds: [ConnectedWorld] = []
     @Published var currentAvatar: AvatarState?
-    @Published var networkStatus: NetworkStatus = .disconnected
+    @Published var networkStatus: StormNetworkStatus = .disconnected
     @Published var errorMessage: String = ""
     
     // MARK: - Private Properties
@@ -130,7 +130,7 @@ class StormEngine: ObservableObject {
     
     /// Create and customize avatar
     func createAvatar(at position: simd_float3, customization: AvatarCustomization? = nil) async throws -> UInt64 {
-        let avatarId = ffi_create_avatar(position.x, position.y, position.z)
+        let avatarId = StormFFIWrapper.createAvatar(at: simd_float3(position.x, position.y, position.z))
         
         if avatarId == 0 {
             throw StormError.avatarCreationFailed("Failed to create avatar")
@@ -229,7 +229,7 @@ class StormEngine: ObservableObject {
         )
         
         // Initialize default entities (ground plane, lighting, etc.)
-        let avatarId = try await createAvatar(at: simd_float3(0, 1, -5))
+        let avatarId = StormFFIWrapper.createAvatar(at: simd_float3(0, 1, -5))
         
         logger.info("Default world created with avatar ID: \(avatarId)")
     }

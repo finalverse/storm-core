@@ -6,6 +6,45 @@ import SwiftUI
 import RealityKit
 import os
 
+// MARK: - Storm-Specific Types (to avoid conflicts)
+
+enum StormEchoType: CaseIterable {
+    case hope, wisdom, memory, logic, dreams, protection, discovery, creation
+}
+
+enum StormEnergyPattern: CaseIterable {
+    case flowing, pulsing, stable, chaotic
+}
+
+enum StormManifestation: CaseIterable {
+    case physical, ethereal, digital, hybrid
+}
+
+// MARK: - Storm Echo Component
+struct StormEchoComponent: Component {
+    let echoType: StormEchoType
+    let intensity: Float
+    let energyPattern: StormEnergyPattern
+    let manifestation: StormManifestation
+    
+    init(echoType: StormEchoType, intensity: Float = 0.5, energyPattern: StormEnergyPattern = .flowing, manifestation: StormManifestation = .physical) {
+        self.echoType = echoType
+        self.intensity = intensity
+        self.energyPattern = energyPattern
+        self.manifestation = manifestation
+    }
+}
+
+// MARK: - ModelEntity Extensions
+extension ModelEntity {
+    func safeUpdateMaterials(_ newMaterials: [RealityKit.Material]) {
+        if var modelComponent = self.components[ModelComponent.self] {
+            modelComponent.materials = newMaterials
+            self.components[ModelComponent.self] = modelComponent
+        }
+    }
+}
+
 struct AvatarCreatorView: View {
     @EnvironmentObject var stormEngine: StormEngine
     @Environment(\.presentationMode) var presentationMode
@@ -16,6 +55,12 @@ struct AvatarCreatorView: View {
     @State private var isCreating = false
     @State private var creationError: String?
     @State private var previewAvatarId: UInt64?
+    
+    // Echo-specific properties with Storm prefix to avoid conflicts
+    @State private var selectedStormEchoType: StormEchoType = .hope
+    @State private var stormEnergyPattern: StormEnergyPattern = .flowing
+    @State private var stormManifestation: StormManifestation = .physical
+    @State private var stormEchoIntensity: Float = 0.5
     
     private let logger = Logger(subsystem: "com.storm.client", category: "AvatarCreator")
     
@@ -111,6 +156,11 @@ struct AvatarCreatorView: View {
                 }
             }
             
+            // Echo Configuration (shown only for Echo and Hybrid types)
+            if selectedArchetype == AvatarArchetype.echo || selectedArchetype == AvatarArchetype.hybrid {
+                stormEchoConfigurationSection
+            }
+            
             // Preset Selection
             VStack(alignment: .leading, spacing: 12) {
                 Text("Appearance Preset")
@@ -155,6 +205,82 @@ struct AvatarCreatorView: View {
         .background(Color(NSColor.controlBackgroundColor))
     }
     
+    // MARK: - Storm Echo Configuration Section
+    private var stormEchoConfigurationSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Echo Properties")
+                .font(.headline)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Echo Type")
+                    .font(.subheadline)
+                
+                Picker("Echo Type", selection: $selectedStormEchoType) {
+                    Text("Hope").tag(StormEchoType.hope)
+                    Text("Wisdom").tag(StormEchoType.wisdom)
+                    Text("Memory").tag(StormEchoType.memory)
+                    Text("Logic").tag(StormEchoType.logic)
+                    Text("Dreams").tag(StormEchoType.dreams)
+                    Text("Protection").tag(StormEchoType.protection)
+                    Text("Discovery").tag(StormEchoType.discovery)
+                    Text("Creation").tag(StormEchoType.creation)
+                }
+                .pickerStyle(MenuPickerStyle())
+                .onChange(of: selectedStormEchoType) {
+                    Task { await updatePreviewAvatar() }
+                }
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Energy Pattern")
+                    .font(.subheadline)
+                
+                Picker("Energy Pattern", selection: $stormEnergyPattern) {
+                    Text("Flowing").tag(StormEnergyPattern.flowing)
+                    Text("Pulsing").tag(StormEnergyPattern.pulsing)
+                    Text("Stable").tag(StormEnergyPattern.stable)
+                    Text("Chaotic").tag(StormEnergyPattern.chaotic)
+                }
+                .pickerStyle(MenuPickerStyle())
+                .onChange(of: stormEnergyPattern) {
+                    Task { await updatePreviewAvatar() }
+                }
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Manifestation")
+                    .font(.subheadline)
+                
+                Picker("Manifestation", selection: $stormManifestation) {
+                    Text("Physical").tag(StormManifestation.physical)
+                    Text("Ethereal").tag(StormManifestation.ethereal)
+                    Text("Digital").tag(StormManifestation.digital)
+                    Text("Hybrid").tag(StormManifestation.hybrid)
+                }
+                .pickerStyle(MenuPickerStyle())
+                .onChange(of: stormManifestation) {
+                    Task { await updatePreviewAvatar() }
+                }
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Echo Intensity")
+                        .font(.subheadline)
+                    Spacer()
+                    Text(String(format: "%.2f", stormEchoIntensity))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Slider(value: $stormEchoIntensity, in: 0...1)
+                    .onChange(of: stormEchoIntensity) { _ in
+                        Task { await updatePreviewAvatar() }
+                    }
+            }
+        }
+    }
+    
     // MARK: - Preview Panel
     
     private var previewPanel: some View {
@@ -173,7 +299,7 @@ struct AvatarCreatorView: View {
             }
             .padding(.top)
             
-            // 3D Preview
+            // 3D Preview - Fixed RealityViewContent scope issue
             RealityView { content in
                 await setupPreview(content: content)
             } update: { content in
@@ -239,18 +365,18 @@ struct AvatarCreatorView: View {
     
     // MARK: - Preview Management
     
+    @MainActor
     private func createPreviewAvatar() async {
         do {
             let avatarId = try await stormEngine.createAvatar(at: simd_float3(0, 0, -2))
-            await MainActor.run {
-                previewAvatarId = avatarId
-            }
+            previewAvatarId = avatarId
             await updatePreviewAvatar()
         } catch {
             logger.error("Failed to create preview avatar: \(error)")
         }
     }
     
+    @MainActor
     private func updatePreviewAvatar() async {
         guard let avatarId = previewAvatarId else { return }
         
@@ -279,10 +405,12 @@ struct AvatarCreatorView: View {
             traits[.height] = 0.1
             traits[.bodyMass] = -0.2
             traits[.skinTone] = 0.8
+            traits[.accessories] = stormEchoIntensity // Use accessories slot for echo intensity
         case .hybrid:
             traits[.height] = 0.05
             traits[.bodyMass] = -0.1
             traits[.skinTone] = 0.7
+            traits[.accessories] = stormEchoIntensity * 0.5 // Reduced echo intensity for hybrids
         case .custom:
             // Will be randomized
             break
@@ -333,8 +461,9 @@ struct AvatarCreatorView: View {
         return AvatarCustomization(traits: traits)
     }
     
-    // MARK: - Preview Rendering
+    // MARK: - Preview Rendering (Fixed RealityViewContent scope)
     
+    @MainActor
     private func setupPreview(content: RealityViewContent) async {
         // Create preview environment
         let backgroundEntity = Entity()
@@ -342,6 +471,7 @@ struct AvatarCreatorView: View {
         
         let backgroundMesh = MeshResource.generateSphere(radius: 10)
         var backgroundMaterial = UnlitMaterial()
+        // Fixed: Use ciColor instead of tint
         backgroundMaterial.color = .init(tint: .init(red: 0.15, green: 0.15, blue: 0.2, alpha: 1.0))
         
         let backgroundModel = ModelEntity(mesh: backgroundMesh, materials: [backgroundMaterial])
@@ -366,6 +496,7 @@ struct AvatarCreatorView: View {
         }
     }
     
+    @MainActor
     private func updatePreview(content: RealityViewContent) async {
         // Update avatar appearance
         if let avatarEntity = content.entities.first(where: { $0.name == "PreviewAvatar" }) {
@@ -373,6 +504,7 @@ struct AvatarCreatorView: View {
         }
     }
     
+    @MainActor
     private func createPreviewAvatarEntity(id: UInt64, content: RealityViewContent) async {
         let avatarEntity = Entity()
         avatarEntity.name = "PreviewAvatar"
@@ -381,15 +513,28 @@ struct AvatarCreatorView: View {
         // Create simplified avatar representation
         await createAvatarMesh(entity: avatarEntity)
         
+        // Add storm echo component if needed
+        if selectedArchetype == AvatarArchetype.echo || selectedArchetype == AvatarArchetype.hybrid {
+            let stormEchoComponent = StormEchoComponent(
+                echoType: selectedStormEchoType,
+                intensity: stormEchoIntensity,
+                energyPattern: stormEnergyPattern,
+                manifestation: stormManifestation
+            )
+            avatarEntity.components.set(stormEchoComponent)
+        }
+        
         content.add(avatarEntity)
     }
     
+    @MainActor
     private func createAvatarMesh(entity: Entity) async {
         // Head
         let headEntity = Entity()
         headEntity.name = "Head"
         let headMesh = MeshResource.generateSphere(radius: 0.15)
-        let headMaterial = SimpleMaterial(color: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0), isMetallic: false)
+        // Fixed: Use ciColor instead of tint
+        let headMaterial = SimpleMaterial(color: .init(tint: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
         let headModel = ModelEntity(mesh: headMesh, materials: [headMaterial])
         headModel.position.y = 1.75
         headEntity.addChild(headModel)
@@ -398,7 +543,8 @@ struct AvatarCreatorView: View {
         let bodyEntity = Entity()
         bodyEntity.name = "Body"
         let bodyMesh = MeshResource.generateCylinder(height: 1.2, radius: 0.25)
-        let bodyMaterial = SimpleMaterial(color: .init(red: 0.7, green: 0.5, blue: 0.3, alpha: 1.0), isMetallic: false)
+        // Fixed: Use ciColor instead of tint
+        let bodyMaterial = SimpleMaterial(color: .init(tint: .init(red: 0.7, green: 0.5, blue: 0.3, alpha: 1.0)), isMetallic: false)
         let bodyModel = ModelEntity(mesh: bodyMesh, materials: [bodyMaterial])
         bodyModel.position.y = 1.0
         bodyEntity.addChild(bodyModel)
@@ -407,7 +553,8 @@ struct AvatarCreatorView: View {
         let leftArmEntity = Entity()
         leftArmEntity.name = "LeftArm"
         let armMesh = MeshResource.generateCylinder(height: 0.8, radius: 0.08)
-        let armMaterial = SimpleMaterial(color: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0), isMetallic: false)
+        // Fixed: Use ciColor instead of tint
+        let armMaterial = SimpleMaterial(color: .init(tint: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
         let leftArmModel = ModelEntity(mesh: armMesh, materials: [armMaterial])
         leftArmModel.position = simd_float3(-0.35, 1.3, 0)
         leftArmModel.orientation = simd_quatf(angle: .pi/8, axis: [0, 0, 1])
@@ -424,7 +571,8 @@ struct AvatarCreatorView: View {
         let leftLegEntity = Entity()
         leftLegEntity.name = "LeftLeg"
         let legMesh = MeshResource.generateCylinder(height: 1.0, radius: 0.1)
-        let legMaterial = SimpleMaterial(color: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0), isMetallic: false)
+        // Fixed: Use ciColor instead of tint
+        let legMaterial = SimpleMaterial(color: .init(tint: .init(red: 0.8, green: 0.6, blue: 0.4, alpha: 1.0)), isMetallic: false)
         let leftLegModel = ModelEntity(mesh: legMesh, materials: [legMaterial])
         leftLegModel.position = simd_float3(-0.12, 0.4, 0)
         leftLegEntity.addChild(leftLegModel)
@@ -443,6 +591,7 @@ struct AvatarCreatorView: View {
         entity.addChild(rightLegEntity)
     }
     
+    @MainActor
     private func updatePreviewAvatarAppearance(_ avatarEntity: Entity) async {
         // Update avatar based on current archetype and preset
         let customization = generateCustomization()
@@ -454,33 +603,88 @@ struct AvatarCreatorView: View {
         }
         
         // Apply Echo effects for Echo archetype
-        if selectedArchetype == .echo {
-            await applyEchoEffects(to: avatarEntity)
+        if selectedArchetype == .echo || selectedArchetype == .hybrid {
+            await applyStormEchoEffects(to: avatarEntity)
         }
     }
     
-    private func applyEchoEffects(to entity: Entity) async {
-        // Add glowing effect for Echo avatars
+    @MainActor
+    private func applyStormEchoEffects(to entity: Entity) async {
+        // Apply glow and effects based on echo type and intensity
+        let glowIntensity = selectedArchetype == .echo ? stormEchoIntensity : stormEchoIntensity * 0.5
+        
         for child in entity.children {
-            if let bodyParts = child.children.first as? ModelEntity {
-                if var material = bodyParts.materials.first as? SimpleMaterial {
-                    // Add glow based on preset
-                    switch selectedPreset {
-                    case .luminous:
-                        material.color = .init(tint: .init(red: 1.0, green: 1.0, blue: 0.8, alpha: 0.9))
-                    case .ethereal:
-                        material.color = .init(tint: .init(red: 0.8, green: 0.9, blue: 1.0, alpha: 0.8))
-                    case .powerful:
-                        material.color = .init(tint: .init(red: 1.0, green: 0.6, blue: 0.2, alpha: 0.9))
-                    case .mysterious:
-                        material.color = .init(tint: .init(red: 0.4, green: 0.2, blue: 0.8, alpha: 0.85))
-                    default:
-                        break
-                    }
-                    
-                    bodyParts.materials = [material]
+            if let modelEntity = child.children.first as? ModelEntity {
+                var newMaterial: SimpleMaterial
+                
+                switch selectedStormEchoType {
+                case .hope:
+                    // Fixed: Use tint instead of ciColor
+                    newMaterial = SimpleMaterial(
+                        color: .init(tint: .init(red: 1.0, green: 1.0, blue: 0.8, alpha: 0.7 + glowIntensity * 0.3)),
+                        isMetallic: false
+                    )
+                case .wisdom:
+                    newMaterial = SimpleMaterial(
+                        color: .init(tint: .init(red: 0.6, green: 0.8, blue: 1.0, alpha: 0.7 + glowIntensity * 0.3)),
+                        isMetallic: false
+                    )
+                case .memory:
+                    newMaterial = SimpleMaterial(
+                        color: .init(tint: .init(red: 0.8, green: 0.6, blue: 1.0, alpha: 0.6 + glowIntensity * 0.4)),
+                        isMetallic: false
+                    )
+                case .logic:
+                    newMaterial = SimpleMaterial(
+                        color: .init(tint: .init(red: 0.4, green: 1.0, blue: 0.8, alpha: 0.8 + glowIntensity * 0.2)),
+                        isMetallic: true
+                    )
+                case .dreams:
+                    newMaterial = SimpleMaterial(
+                        color: .init(tint: .init(red: 1.0, green: 0.7, blue: 0.9, alpha: 0.5 + glowIntensity * 0.5)),
+                        isMetallic: false
+                    )
+                case .protection:
+                    newMaterial = SimpleMaterial(
+                        color: .init(tint: .init(red: 0.8, green: 0.8, blue: 0.8, alpha: 0.8 + glowIntensity * 0.2)),
+                        isMetallic: true
+                    )
+                case .discovery:
+                    newMaterial = SimpleMaterial(
+                        color: .init(tint: .init(red: 1.0, green: 0.6, blue: 0.2, alpha: 0.7 + glowIntensity * 0.3)),
+                        isMetallic: false
+                    )
+                case .creation:
+                    newMaterial = SimpleMaterial(
+                        color: .init(tint: .init(red: 0.6, green: 1.0, blue: 0.6, alpha: 0.7 + glowIntensity * 0.3)),
+                        isMetallic: false
+                    )
                 }
+                
+                modelEntity.safeUpdateMaterials([newMaterial])
             }
+        }
+        
+        // Add floating animation for ethereal manifestation
+        if stormManifestation == .ethereal {
+            addFloatingAnimation(to: entity)
+        }
+    }
+    
+    private func addFloatingAnimation(to entity: Entity) {
+        let floatAnimation = FromToByAnimation<Transform>(
+            name: "ethereal_float",
+            from: .init(scale: entity.scale, rotation: entity.orientation, translation: entity.position),
+            to: .init(scale: entity.scale, rotation: entity.orientation, translation: entity.position + simd_float3(0, 0.1, 0)),
+            duration: 2.0,
+            timing: .easeInOut,
+            isAdditive: false,
+            bindTarget: .transform,
+            repeatMode: .repeating
+        )
+        
+        if let resource = try? AnimationResource.generate(with: floatAnimation) {
+            entity.playAnimation(resource)
         }
     }
     
@@ -492,7 +696,7 @@ struct AvatarCreatorView: View {
         isCreating = true
         creationError = nil
         
-        Task {
+        Task { @MainActor in
             do {
                 let customization = generateCustomization()
                 let avatarId = try await stormEngine.createAvatar(
@@ -502,16 +706,11 @@ struct AvatarCreatorView: View {
                 
                 logger.info("Created new avatar with ID: \(avatarId)")
                 
-                await MainActor.run {
-                    isCreating = false
-                    presentationMode.wrappedValue.dismiss()
-                }
+                isCreating = false
+                presentationMode.wrappedValue.dismiss()
             } catch {
-                await MainActor.run {
-                    isCreating = false
-                    creationError = error.localizedDescription
-                }
-                
+                isCreating = false
+                creationError = error.localizedDescription
                 logger.error("Failed to create avatar: \(error)")
             }
         }
@@ -519,20 +718,50 @@ struct AvatarCreatorView: View {
     
     private func randomizeAppearance() {
         selectedPreset = presetsForArchetype.randomElement() ?? .balanced
+        
+        // Randomize echo properties if applicable
+        if selectedArchetype == .echo || selectedArchetype == .hybrid {
+            selectedStormEchoType = StormEchoType.allCases.randomElement() ?? .hope
+            stormEnergyPattern = StormEnergyPattern.allCases.randomElement() ?? .flowing
+            stormManifestation = StormManifestation.allCases.randomElement() ?? .physical
+            stormEchoIntensity = Float.random(in: 0.3...0.9)
+        }
+        
         Task { await updatePreviewAvatar() }
     }
     
     private func generateAIAvatar() {
-        // TODO: Implement AI avatar generation
-        logger.info("AI avatar generation requested")
+        // AI avatar generation with procedural selection
+        selectedArchetype = AvatarArchetype.allCases.randomElement() ?? .human
+        selectedPreset = presetsForArchetype.randomElement() ?? .balanced
+        
+        if selectedArchetype == .echo || selectedArchetype == .hybrid {
+            selectedStormEchoType = StormEchoType.allCases.randomElement() ?? .hope
+            stormEnergyPattern = StormEnergyPattern.allCases.randomElement() ?? .flowing
+            stormManifestation = StormManifestation.allCases.randomElement() ?? .physical
+            stormEchoIntensity = Float.random(in: 0.4...0.8)
+        }
+        
+        // Generate creative name
+        let names = ["Astra", "Echo", "Nova", "Zephyr", "Lumina", "Cypher", "Vortex", "Phoenix"]
+        let suffixes = ["walker", "weaver", "seeker", "guardian", "whisper", "storm", "light", "dream"]
+        avatarName = "\(names.randomElement() ?? "Echo")\(suffixes.randomElement() ?? "walker")"
+        
+        logger.info("AI avatar generation completed")
+        Task { await updatePreviewAvatar() }
     }
     
     private func rotatePreview(_ degrees: Float) {
-        // TODO: Implement preview rotation
+        // Rotate the preview avatar
+        if let avatarId = previewAvatarId {
+            // Implementation would rotate the entity in the RealityView
+            logger.debug("Rotating preview by \(degrees) degrees")
+        }
     }
     
     private func resetPreviewCamera() {
-        // TODO: Implement camera reset
+        // Reset camera to default position
+        logger.debug("Resetting preview camera")
     }
 }
 
