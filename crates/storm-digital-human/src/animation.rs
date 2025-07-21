@@ -7,12 +7,28 @@
 
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use storm_math::{Vec3, Quat};
-use storm_ecs::prelude::*;
-use crate::emotion::Emotion;
-use crate::behavior::BehaviorState;
+use crate::{emotion::Emotion, behavior::{BehaviorState, Entity, Vec3, Component}};
 
-#[derive(Component, Debug, Clone)]
+// Mock Quat type for rotations
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Quat {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+    pub w: f32,
+}
+
+impl Quat {
+    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+        Self { x, y, z, w }
+    }
+
+    pub fn identity() -> Self {
+        Self::new(0.0, 0.0, 0.0, 1.0)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct AnimationController {
     pub current_animations: Vec<ActiveAnimation>,
     pub animation_queue: Vec<QueuedAnimation>,
@@ -21,6 +37,8 @@ pub struct AnimationController {
     pub facial_controller: FacialAnimationController,
     pub gesture_controller: GestureController,
 }
+
+impl Component for AnimationController {}
 
 impl AnimationController {
     pub fn new() -> Self {
@@ -103,9 +121,19 @@ impl AnimationController {
     }
 
     fn stop_conflicting_animations(&mut self, new_animation: &AnimationRequest) {
-        self.current_animations.retain(|anim| {
-            !self.animations_conflict(&anim.animation_type, &new_animation.animation_type)
-        });
+        // Create a list of indices to remove to avoid borrowing conflicts
+        let mut indices_to_remove = Vec::new();
+
+        for (index, anim) in self.current_animations.iter().enumerate() {
+            if self.animations_conflict(&anim.animation_type, &new_animation.animation_type) {
+                indices_to_remove.push(index);
+            }
+        }
+
+        // Remove animations in reverse order to maintain valid indices
+        for &index in indices_to_remove.iter().rev() {
+            self.current_animations.remove(index);
+        }
     }
 
     fn animations_conflict(&self, anim1: &AnimationType, anim2: &AnimationType) -> bool {
@@ -124,12 +152,16 @@ impl AnimationController {
     }
 
     fn process_queue(&mut self) {
-        if let Some(queued) = self.animation_queue.first() {
-            // Check if we can start the next animation
-            if self.can_start_animation(&queued.request) {
-                let animation = self.animation_queue.remove(0);
-                self.start_animation(animation.request);
-            }
+        // Check if we can start the next animation without borrowing conflicts
+        let can_start = if let Some(queued) = self.animation_queue.first() {
+            self.can_start_animation(&queued.request)
+        } else {
+            false
+        };
+
+        if can_start {
+            let animation = self.animation_queue.remove(0);
+            self.start_animation(animation.request);
         }
     }
 
@@ -338,24 +370,31 @@ impl AnimationBlendTree {
     }
 
     fn update_node(&mut self, index: usize, delta_time: f32) {
-        // Recursively update child nodes and compute blends
-        match &mut self.nodes[index] {
-            BlendNode::Clip { current_time, speed, .. } => {
-                // Advance clip time
-                *current_time += delta_time * *speed;
-                // Handle looping logic if needed (assuming external handling for now)
-            }
-            BlendNode::Blend { children, weights, .. } => {
-                // Update children recursively
-                for &child in children {
-                    self.update_node(child, delta_time);
-                }
-                // Normalize weights if sum != 1.0
-                let total_weight: f32 = weights.iter().sum();
-                if total_weight != 1.0 {
-                    for weight in weights.iter_mut() {
-                        *weight /= total_weight;
-                    }
+        // First handle clip updates without borrowing conflicts
+        if let BlendNode::Clip { current_time, speed, .. } = &mut self.nodes[index] {
+            *current_time += delta_time * *speed;
+            return;
+        }
+
+        // For blend nodes, we need to carefully handle the recursive updates
+        // First, extract children indices to avoid borrowing conflicts
+        let children_indices = if let BlendNode::Blend { children, .. } = &self.nodes[index] {
+            children.clone()
+        } else {
+            return;
+        };
+
+        // Update all children recursively
+        for child_index in children_indices {
+            self.update_node(child_index, delta_time);
+        }
+
+        // Now normalize weights
+        if let BlendNode::Blend { weights, .. } = &mut self.nodes[index] {
+            let total_weight: f32 = weights.iter().sum();
+            if total_weight > 0.0 && (total_weight - 1.0).abs() > f32::EPSILON {
+                for weight in weights.iter_mut() {
+                    *weight /= total_weight;
                 }
             }
         }

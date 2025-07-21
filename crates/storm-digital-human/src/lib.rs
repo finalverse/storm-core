@@ -16,6 +16,7 @@ pub use emotion::*;
 pub use memory::*;
 pub use personality::*;
 pub use relationships::*;
+pub use animation::*;
 
 use thiserror::Error;
 

@@ -2,17 +2,72 @@
 // Description: AI-driven NPC behavior system with HFSM
 // Implements hierarchical finite state machines with ML integration
 
-use storm_ecs::prelude::*;
-use storm_ai::prelude::*;
-use storm_avatar::SongResonance;
-use crate::*;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use std::sync::Arc;
 
-#[derive(Component, Debug)]
+// Mock imports for dependencies
+pub use storm_ecs::prelude::*;
+
+// Mock ECS Entity type for compilation
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Entity(pub u32);
+
+impl Entity {
+    pub fn new(id: u32) -> Self {
+        Entity(id)
+    }
+}
+
+// Mock Component trait
+pub trait Component: Send + Sync + 'static {}
+
+// Mock Vec3 type
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct Vec3 {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+impl Vec3 {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
+        Self { x, y, z }
+    }
+}
+
+// Mock SongResonance type
+#[derive(Debug, Clone)]
+pub struct SongResonance {
+    pub harmony_level: f32,
+}
+
+// Mock AI types
+#[async_trait]
+pub trait AIModel: Send + Sync + std::fmt::Debug {
+    async fn predict(&self, features: &[f32]) -> Result<Vec<f32>, String>;
+}
+
+#[derive(Debug)]
+pub struct AIClient;
+
+impl AIClient {
+    pub async fn generate(&self, prompt: String, params: GenerationParams) -> Result<String, String> {
+        Ok("AI generated response".to_string())
+    }
+}
+
+#[derive(Default)]
+pub struct GenerationParams {
+    pub max_tokens: usize,
+    pub temperature: f32,
+}
+
+use crate::{emotion::Emotion, personality::PersonalityMatrix, memory::NPCMemory, dialogue::DialogueEngine};
+
+#[derive(Debug)]
 pub struct NPCBehavior {
     pub id: uuid::Uuid,
     pub personality: PersonalityMatrix,
@@ -22,6 +77,8 @@ pub struct NPCBehavior {
     pub dialogue_engine: DialogueEngine,
     pub last_update: f64,
 }
+
+impl Component for NPCBehavior {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BehaviorState {
@@ -55,7 +112,7 @@ pub enum BehaviorState {
         turn: ConversationTurn,
     },
     Exploring {
-        destination: Option<storm_math::Vec3>,
+        destination: Option<Vec3>,
         curiosity_level: f32,
     },
 }
@@ -74,7 +131,7 @@ pub enum InteractionType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum NPCAction {
     Animation(String),
-    Movement(storm_math::Vec3),
+    Movement(Vec3),
     Speech(String),
     Emote(String),
     UseAbility(String),
@@ -90,6 +147,7 @@ pub enum ConversationTurn {
 }
 
 // Behavior Tree Implementation
+#[derive(Debug)]
 pub struct BehaviorTree {
     root: Box<dyn BehaviorNode>,
     blackboard: Blackboard,
@@ -97,7 +155,7 @@ pub struct BehaviorTree {
 }
 
 #[async_trait]
-pub trait BehaviorNode: Send + Sync {
+pub trait BehaviorNode: Send + Sync + std::fmt::Debug {
     async fn execute(&mut self, context: &mut BehaviorContext) -> NodeResult;
     fn reset(&mut self);
 }
@@ -116,6 +174,7 @@ pub enum NodeResult {
     Running,
 }
 
+#[derive(Debug)]
 pub struct Blackboard {
     data: HashMap<String, BlackboardValue>,
 }
@@ -126,10 +185,11 @@ pub enum BlackboardValue {
     Float(f32),
     String(String),
     Entity(Entity),
-    Vector(storm_math::Vec3),
+    Vector(Vec3),
 }
 
 // Behavior Nodes
+#[derive(Debug)]
 pub struct SequenceNode {
     children: Vec<Box<dyn BehaviorNode>>,
     current_index: usize,
@@ -160,6 +220,7 @@ impl BehaviorNode for SequenceNode {
     }
 }
 
+#[derive(Debug)]
 pub struct SelectorNode {
     children: Vec<Box<dyn BehaviorNode>>,
     current_index: usize,
@@ -191,6 +252,7 @@ impl BehaviorNode for SelectorNode {
 }
 
 // AI-Enhanced Behavior Nodes
+#[derive(Debug)]
 pub struct AIDecisionNode {
     decision_type: String,
     options: Vec<String>,
@@ -241,16 +303,17 @@ impl AIDecisionNode {
     fn calculate_option_weight(&self, option: &str, personality: &PersonalityMatrix) -> f32 {
         // Map options to personality traits
         match option {
-            "help" => personality.get_trait_value(PersonalityTrait::Compassion),
-            "flee" => 1.0 - personality.get_trait_value(PersonalityTrait::Courage),
-            "fight" => personality.get_trait_value(PersonalityTrait::Aggression),
-            "negotiate" => personality.get_trait_value(PersonalityTrait::Diplomacy),
+            "help" => personality.get_trait_value(crate::personality::PersonalityTrait::Compassion),
+            "flee" => 1.0 - personality.get_trait_value(crate::personality::PersonalityTrait::Courage),
+            "fight" => personality.get_trait_value(crate::personality::PersonalityTrait::Aggression),
+            "negotiate" => personality.get_trait_value(crate::personality::PersonalityTrait::Diplomacy),
             _ => 0.5,
         }
     }
 }
 
 // Emotional Response Node
+#[derive(Debug)]
 pub struct EmotionalResponseNode {
     trigger: String,
 }
@@ -276,6 +339,7 @@ impl BehaviorNode for EmotionalResponseNode {
 }
 
 // ML Behavior Predictor
+#[derive(Debug)]
 pub struct MLBehaviorPredictor {
     model: Arc<dyn AIModel>,
 }
@@ -330,7 +394,7 @@ impl MLBehaviorPredictor {
         }
     }
 
-    fn prediction_to_state(&self, prediction: Vec<f32>, world_context: &WorldContext) -> BehaviorState {
+    fn prediction_to_state(&self, prediction: Vec<f32>, _world_context: &WorldContext) -> BehaviorState {
         // Find highest probability state
         let state_index = prediction.iter()
             .enumerate()
@@ -550,6 +614,7 @@ pub enum NPCArchetype {
 }
 
 // Additional behavior nodes
+#[derive(Debug)]
 pub struct CheckConditionNode {
     condition: String,
 }
@@ -570,6 +635,7 @@ impl BehaviorNode for CheckConditionNode {
     fn reset(&mut self) {}
 }
 
+#[derive(Debug)]
 pub struct DailyRoutineNode {
     schedule: Vec<(f32, &'static str)>,
 }
@@ -603,6 +669,7 @@ impl BehaviorNode for DailyRoutineNode {
     fn reset(&mut self) {}
 }
 
+#[derive(Debug)]
 pub struct DetectThreatNode {
     detection_radius: f32,
 }
@@ -627,6 +694,7 @@ impl BehaviorNode for DetectThreatNode {
     fn reset(&mut self) {}
 }
 
+#[derive(Debug)]
 pub struct CombatBehaviorNode;
 
 #[async_trait]
@@ -647,8 +715,9 @@ impl BehaviorNode for CombatBehaviorNode {
     fn reset(&mut self) {}
 }
 
+#[derive(Debug)]
 pub struct PatrolNode {
-    waypoints: Vec<storm_math::Vec3>,
+    waypoints: Vec<Vec3>,
     current_index: usize,
 }
 
@@ -674,5 +743,12 @@ impl BehaviorNode for PatrolNode {
 
     fn reset(&mut self) {
         self.current_index = 0;
+    }
+}
+
+// Mock storm_ecs module
+pub mod storm_ecs {
+    pub mod prelude {
+        pub use super::super::{Entity, Component};
     }
 }

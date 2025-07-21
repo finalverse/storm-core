@@ -184,6 +184,19 @@ impl PersonalityQuirk {
             behavior_modifiers: modifiers,
         }
     }
+
+    pub fn mischievous() -> Self {
+        let mut modifiers = HashMap::new();
+        modifiers.insert("prank_tendency".to_string(), 1.5);
+        modifiers.insert("humor_appreciation".to_string(), 1.3);
+        modifiers.insert("rule_following".to_string(), 0.7);
+
+        Self {
+            name: "Mischievous".to_string(),
+            description: "Loves pranks and playful trouble".to_string(),
+            behavior_modifiers: modifiers,
+        }
+    }
 }
 
 // Personality archetypes for quick generation
@@ -232,20 +245,5 @@ impl PersonalityArchetypes {
         personality.modify_trait(PersonalityTrait::Curiosity, 0.4);
         personality.values.insert("spirituality".to_string(), 0.8);
         personality
-    }
-}
-
-impl PersonalityQuirk {
-    pub fn mischievous() -> Self {
-        let mut modifiers = HashMap::new();
-        modifiers.insert("prank_tendency".to_string(), 1.5);
-        modifiers.insert("humor_appreciation".to_string(), 1.3);
-        modifiers.insert("rule_following".to_string(), 0.7);
-
-        Self {
-            name: "Mischievous".to_string(),
-            description: "Loves pranks and playful trouble".to_string(),
-            behavior_modifiers: modifiers,
-        }
     }
 }

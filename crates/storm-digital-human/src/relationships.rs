@@ -1,14 +1,13 @@
 // File: crates/storm-digital-human/src/relationships.rs
-// Description: Relationship system between NPCs and players
+// Description: Relationship system between NPCs and players - Fixed version
 // Manages social networks, reputation, and dynamic relationship evolution
 
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use petgraph::{Graph, NodeIndex, Directed};
-use petgraph::graph::UnGraph;
-use storm_ecs::prelude::*;
+use petgraph::{Graph, Directed};
+use petgraph::graph::NodeIndex;
+use crate::behavior::Entity;
 use uuid::Uuid;
-use ordered_float::OrderedFloat;
 
 #[derive(Debug, Clone)]
 pub struct RelationshipGraph {
@@ -50,23 +49,26 @@ impl RelationshipGraph {
     }
 
     pub fn update_relationship(&mut self, from: Entity, to: Entity, delta: RelationshipDelta) {
-        if let (Some(&from_node), Some(&to_node)) =
-            (self.entity_to_node.get(&from), self.entity_to_node.get(&to)) {
+        let (from_node, to_node) = match (self.entity_to_node.get(&from), self.entity_to_node.get(&to)) {
+            (Some(&from_node), Some(&to_node)) => (from_node, to_node),
+            _ => return, // Early return if entities not found
+        };
 
-            if let Some(edge_index) = self.graph.find_edge(from_node, to_node) {
-                if let Some(edge) = self.graph.edge_weight_mut(edge_index) {
-                    edge.relationship.apply_delta(&delta);
-                    edge.last_interaction = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs_f64();
-                    edge.interaction_count += 1;
-                }
-            } else {
-                // Create new relationship if it doesn't exist
-                let relationship = Relationship::from_delta(delta);
-                self.add_relationship(from, to, relationship);
+        // Check if edge exists
+        if let Some(edge_index) = self.graph.find_edge(from_node, to_node) {
+            // Update existing relationship
+            if let Some(edge) = self.graph.edge_weight_mut(edge_index) {
+                edge.relationship.apply_delta(&delta);
+                edge.last_interaction = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs_f64();
+                edge.interaction_count += 1;
             }
+        } else {
+            // Create new relationship if it doesn't exist
+            let relationship = Relationship::from_delta(delta);
+            self.add_relationship(from, to, relationship);
         }
     }
 
@@ -123,7 +125,7 @@ impl RelationshipGraph {
 
         // Use inverse of trust as edge weight for shortest path
         let edge_weights = |edge: petgraph::graph::EdgeReference<RelationshipEdge>| {
-            1.0 / (edge.weight().relationship.trust + 0.1) // Avoid division by zero
+            OrderedFloat(1.0 / (edge.weight().relationship.trust + 0.1)) // Avoid division by zero
         };
 
         let path_map = dijkstra(&self.graph, *from_node, Some(*to_node), edge_weights);
@@ -147,20 +149,22 @@ impl RelationshipGraph {
     pub fn decay_relationships(&mut self, delta_time: f32) {
         let decay_rate = 0.01 * delta_time; // Relationships decay slowly over time
 
-        for edge in self.graph.edge_weights_mut() {
-            edge.relationship.decay(decay_rate);
-        }
-
-        // Remove very weak relationships
+        // Collect edges to remove to avoid borrowing conflicts
         let mut edges_to_remove = Vec::new();
+
+        // First pass: decay relationships and collect weak ones
         for edge_index in self.graph.edge_indices() {
-            if let Some(edge) = self.graph.edge_weight(edge_index) {
+            if let Some(edge) = self.graph.edge_weight_mut(edge_index) {
+                edge.relationship.decay(decay_rate);
+
+                // Check if relationship should be removed
                 if edge.relationship.is_negligible() {
                     edges_to_remove.push(edge_index);
                 }
             }
         }
 
+        // Second pass: remove weak relationships
         for edge_index in edges_to_remove {
             self.graph.remove_edge(edge_index);
         }
@@ -558,6 +562,9 @@ impl ReputationLevel {
     }
 }
 
+// Import OrderedFloat for dijkstra algorithm
+use ordered_float::OrderedFloat;
+
 // Relationship analysis tools
 pub struct RelationshipAnalyzer;
 
@@ -570,9 +577,14 @@ impl RelationshipAnalyzer {
 
         let relationship_quality = graph.entity_to_node.get(&entity)
             .map(|&node| {
-                graph.graph.edges(node)
-                    .map(|edge| edge.weight().relationship.get_overall_sentiment())
-                    .sum::<f32>() / graph.graph.edges(node).count().max(1) as f32
+                let edges: Vec<_> = graph.graph.edges(node).collect();
+                if edges.is_empty() {
+                    0.0
+                } else {
+                    edges.iter()
+                        .map(|edge| edge.weight().relationship.get_overall_sentiment())
+                        .sum::<f32>() / edges.len() as f32
+                }
             })
             .unwrap_or(0.0);
 

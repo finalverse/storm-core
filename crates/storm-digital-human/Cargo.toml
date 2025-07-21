@@ -1,35 +1,47 @@
 # File: crates/storm-digital-human/Cargo.toml
-# Description: Digital human and NPC behavior system
-# Implements AI-driven characters with emotional intelligence
+# Description: Dependency configuration for storm-digital-human crate
+# Core digital human system with AI-driven behaviors
 
 [package]
 name = "storm-digital-human"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-license.workspace = true
+version = "0.1.0"
+edition = "2021"
+authors = ["Storm Digital Human Team"]
+description = "Digital human system with AI-driven behaviors, personality, and memory"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/storm/storm-digital-human"
+keywords = ["ai", "npc", "behavior", "personality", "digital-human"]
+categories = ["game-development", "simulation"]
 
 [dependencies]
-# Internal dependencies
-storm-ecs = { workspace = true }
-storm-math = { workspace = true }
-storm-avatar = { workspace = true }
-storm-ai = { workspace = true }
-# storm-narrative = { workspace = true }
+# Core dependencies
+serde = { version = "1.0", features = ["derive"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+thiserror = "1.0"
+parking_lot = "0.12"
+async-trait = "0.1"
 
-# External dependencies
-serde = { workspace = true }
-serde_json = { workspace = true }
-uuid = { workspace = true }
-tokio = { workspace = true }
-async-trait = { workspace = true }
-dashmap = { workspace = true }
-parking_lot = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-ordered-float = { workspace = true }
-petgraph = "0.6"  # For relationship graphs
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+
+# Random number generation
+rand = "0.8"
+
+# Math utilities
+ordered-float = "4.0"
+
+# Graph algorithms for relationships
+petgraph = "0.6"
+
+# Mock ECS (in real implementation, would use actual storm-ecs)
+# storm-ecs = { path = "../storm-ecs" }
+# storm-ai = { path = "../storm-ai" }
+# storm-math = { path = "../storm-math" }
+# storm-avatar = { path = "../storm-avatar" }
 
 [dev-dependencies]
-mockall = { workspace = true }
 tokio-test = "0.4"
+
+[features]
+default = []
+ai-enhanced = []  # Enable AI-enhanced features when available

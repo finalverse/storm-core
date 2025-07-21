@@ -2,12 +2,13 @@
 // Description: Dialogue system with AI integration
 // Manages conversations, context, and dynamic responses
 
-use storm_ai::prelude::*;
-use crate::*;
 use serde::{Serialize, Deserialize};
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 use tokio::sync::RwLock;
 use std::sync::Arc;
+
+use crate::behavior::{Entity, WorldContext, NPCAction, AIClient, GenerationParams};
+use crate::{personality::PersonalityMatrix, emotion::Emotion, DigitalHumanError};
 
 #[derive(Debug)]
 pub struct DialogueEngine {
@@ -141,6 +142,7 @@ pub enum DialogueIntent {
     Farewell,
 }
 
+#[derive(Debug)]
 pub struct ContextAnalyzer {
     intent_classifier: IntentClassifier,
     emotion_detector: EmotionDetector,
@@ -154,7 +156,7 @@ impl ContextAnalyzer {
         }
     }
 
-    pub fn analyze(&self, input: &str, context: &DialogueContext) -> DialogueAnalysis {
+    pub fn analyze(&self, input: &str, _context: &DialogueContext) -> DialogueAnalysis {
         DialogueAnalysis {
             intent: self.intent_classifier.classify(input),
             emotion: self.emotion_detector.detect(input),
@@ -194,6 +196,7 @@ impl ContextAnalyzer {
     }
 }
 
+#[derive(Debug)]
 pub struct IntentClassifier;
 
 impl IntentClassifier {
@@ -222,6 +225,7 @@ impl IntentClassifier {
     }
 }
 
+#[derive(Debug)]
 pub struct EmotionDetector;
 
 impl EmotionDetector {
@@ -254,6 +258,7 @@ pub struct DialogueAnalysis {
     pub sentiment: f32,
 }
 
+#[derive(Debug)]
 pub struct ResponseGenerator {
     personality: PersonalityMatrix,
     response_templates: ResponseTemplates,
@@ -306,7 +311,7 @@ impl ResponseGenerator {
         analysis: &DialogueAnalysis,
         context: &DialogueContext,
         memory: &DialogueMemory,
-    ) -> Result<DialogueResponse> {
+    ) -> Result<DialogueResponse, DigitalHumanError> {
         let prompt = self.build_ai_prompt(analysis, context, memory);
 
         let ai_text = ai.generate(prompt, GenerationParams {
@@ -349,7 +354,7 @@ impl ResponseGenerator {
         &self,
         analysis: &DialogueAnalysis,
         context: &DialogueContext,
-        memory: &DialogueMemory,
+        _memory: &DialogueMemory,
     ) -> DialogueResponse {
         let template = self.response_templates.get_template(
             &analysis.intent,
@@ -370,16 +375,16 @@ impl ResponseGenerator {
     fn personalize_template(
         &self,
         template: &str,
-        analysis: &DialogueAnalysis,
-        context: &DialogueContext,
+        _analysis: &DialogueAnalysis,
+        _context: &DialogueContext,
     ) -> String {
         // Add personality-based modifications
         let mut response = template.to_string();
 
         // Add personality flavor
-        if self.personality.get_trait_value(PersonalityTrait::Extraversion) > 0.7 {
+        if self.personality.get_trait_value(crate::personality::PersonalityTrait::Extraversion) > 0.7 {
             response = format!("{} Let me tell you more!", response);
-        } else if self.personality.get_trait_value(PersonalityTrait::Extraversion) < 0.3 {
+        } else if self.personality.get_trait_value(crate::personality::PersonalityTrait::Extraversion) < 0.3 {
             response = format!("{}...", response);
         }
 
@@ -391,14 +396,14 @@ impl ResponseGenerator {
         match analysis.emotion {
             Some(Emotion::Joy) => Some(Emotion::Joy),
             Some(Emotion::Sadness) => Some(Emotion::Gratitude),
-            Some(Emotion::Anger) if self.personality.get_trait_value(PersonalityTrait::Agreeableness) > 0.6 => {
+            Some(Emotion::Anger) if self.personality.get_trait_value(crate::personality::PersonalityTrait::Agreeableness) > 0.6 => {
                 Some(Emotion::Trust)
             }
             _ => None,
         }
     }
 
-    fn determine_action(&self, analysis: &DialogueAnalysis, context: &DialogueContext) -> Option<NPCAction> {
+    fn determine_action(&self, analysis: &DialogueAnalysis, _context: &DialogueContext) -> Option<NPCAction> {
         match analysis.intent {
             DialogueIntent::Greeting => Some(NPCAction::Animation("wave".to_string())),
             DialogueIntent::Farewell => Some(NPCAction::Animation("bow".to_string())),
@@ -415,6 +420,7 @@ impl ResponseGenerator {
     }
 }
 
+#[derive(Debug)]
 pub struct ResponseTemplates {
     templates: HashMap<String, Vec<String>>,
 }
@@ -449,7 +455,7 @@ impl ResponseTemplates {
         personality: &PersonalityMatrix,
         context: &DialogueContext,
     ) -> &str {
-        let key = match (intent, context.mood) {
+        let key = match (intent, &context.mood) {
             (DialogueIntent::Greeting, ConversationMood::Friendly) => "greeting_friendly",
             (DialogueIntent::Greeting, ConversationMood::Formal) => "greeting_formal",
             (DialogueIntent::Question, _) => "question_response",

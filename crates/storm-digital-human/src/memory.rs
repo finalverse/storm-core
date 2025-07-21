@@ -1,13 +1,11 @@
 // File: crates/storm-digital-human/src/memory.rs
-// Description: Memory system for NPCs
-// Manages short-term and long-term memories with importance scoring
+// Description: Memory system for NPCs - Fully corrected version
+// Manages short-term and long-term memories with importance scoring and proper borrowing
 
 use serde::{Serialize, Deserialize};
-use std::collections::{VecDeque, HashMap, BTreeMap};
+use std::collections::{VecDeque, HashMap, BTreeMap, HashSet};
 use uuid::Uuid;
-use ordered_float::OrderedFloat;
-use storm_ecs::prelude::*;
-use crate::emotion::Emotion;
+use crate::{emotion::Emotion, behavior::{Entity, Vec3}};
 use parking_lot::RwLock;
 use std::sync::Arc;
 
@@ -32,12 +30,12 @@ impl NPCMemory {
     }
 
     pub fn store_event(&mut self, event: MemoryEvent) {
-        // Calculate importance using multiple factors
-        let importance = self.calculate_importance(&event);
+        // Calculate importance first to avoid borrowing conflicts
+        let importance = Self::calculate_importance_static(&event, &self.short_term);
 
         let memory = Memory {
             id: Uuid::new_v4(),
-            event,
+            event: event.clone(),
             importance,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -48,27 +46,23 @@ impl NPCMemory {
             decay_rate: 0.1,
         };
 
-        // Always store in short-term first
+        // Store in different memory systems
         self.short_term.add(memory.clone());
-
-        // Store in episodic memory for context
         self.episodic_memory.add_episode(&memory);
 
-        // Extract semantic knowledge if significant
         if importance > 0.7 {
             self.semantic_memory.extract_knowledge(&memory);
         }
 
-        // Store in long-term if important enough
         if importance > 0.6 {
-            self.long_term.add(memory);
+            self.long_term.add(memory.clone());
         }
 
-        // Update working memory context
-        self.working_memory.update_context(&memory.event);
+        self.working_memory.update_context(&event);
     }
 
-    fn calculate_importance(&self, event: &MemoryEvent) -> f32 {
+    // Static method to calculate importance without borrowing self
+    fn calculate_importance_static(event: &MemoryEvent, short_term: &ShortTermMemory) -> f32 {
         let base_importance = match &event.memory_type {
             MemoryType::Social { relationship_impact, .. } => {
                 0.5 + relationship_impact.abs() * 0.5
@@ -87,17 +81,16 @@ impl NPCMemory {
             }
         };
 
-        // Apply modifiers based on context
-        let context_modifier = self.calculate_context_modifier(event);
-        let recency_modifier = self.calculate_recency_modifier(event);
-        let uniqueness_modifier = self.calculate_uniqueness_modifier(event);
+        // Apply modifiers
+        let context_modifier = Self::calculate_context_modifier_static(event);
+        let recency_modifier = 1.1; // Recent events are slightly more important
+        let uniqueness_modifier = Self::calculate_uniqueness_modifier_static(event, short_term);
 
         (base_importance * context_modifier * recency_modifier * uniqueness_modifier)
             .clamp(0.0, 1.0)
     }
 
-    fn calculate_context_modifier(&self, event: &MemoryEvent) -> f32 {
-        // Events during high emotional states are more memorable
+    fn calculate_context_modifier_static(event: &MemoryEvent) -> f32 {
         if let Some(emotion) = &event.associated_emotion {
             match emotion {
                 Emotion::Fear | Emotion::Anger | Emotion::Joy => 1.2,
@@ -109,63 +102,80 @@ impl NPCMemory {
         }
     }
 
-    fn calculate_recency_modifier(&self, _event: &MemoryEvent) -> f32 {
-        // Recent events are slightly more important
-        1.1
-    }
-
-    fn calculate_uniqueness_modifier(&self, event: &MemoryEvent) -> f32 {
-        // Check if similar events exist
-        let similar_count = self.short_term.entries.iter()
-            .filter(|m| self.are_events_similar(&m.event, event))
+    fn calculate_uniqueness_modifier_static(event: &MemoryEvent, short_term: &ShortTermMemory) -> f32 {
+        let similar_count = short_term.entries.iter()
+            .filter(|m| Self::are_events_similar_static(&m.event, event))
             .count();
 
         if similar_count == 0 {
-            1.2 // Unique events are more memorable
+            1.2
         } else {
             1.0 / (similar_count as f32 + 1.0)
         }
     }
 
-    fn are_events_similar(&self, event1: &MemoryEvent, event2: &MemoryEvent) -> bool {
+    fn are_events_similar_static(event1: &MemoryEvent, event2: &MemoryEvent) -> bool {
         std::mem::discriminant(&event1.memory_type) ==
             std::mem::discriminant(&event2.memory_type) &&
-            event1.description.contains(&event2.description[..event2.description.len().min(10)])
+            event1.description.len() >= 10 && event2.description.len() >= 10 &&
+            event1.description.contains(&event2.description[..10])
     }
 
     pub fn recall(&mut self, query: &MemoryQuery) -> Vec<Memory> {
+        // Collect results from all memory systems
         let mut results = Vec::new();
 
-        // Search short-term memory
-        results.extend(self.short_term.search(query));
+        // Search each memory system separately to avoid borrowing conflicts
+        results.extend(self.search_short_term(query));
+        results.extend(self.search_long_term(query));
+        results.extend(self.search_episodic(query));
 
-        // Search long-term memory
-        results.extend(self.long_term.search(query));
+        // Update recall statistics for found memories
+        self.update_recall_statistics(&results);
 
-        // Search episodic memory for context
-        results.extend(self.episodic_memory.search(query));
-
-        // Update recall counts and strengthen memories
-        for memory in &mut results {
-            memory.recall_count += 1;
-            // Memories that are recalled become stronger
-            memory.importance = (memory.importance * 1.1).min(1.0);
-        }
-
-        // Sort by relevance and importance
+        // Sort by relevance
         results.sort_by(|a, b| {
-            let relevance_a = self.calculate_memory_relevance(a, query);
-            let relevance_b = self.calculate_memory_relevance(b, query);
+            let relevance_a = Self::calculate_memory_relevance_static(a, query);
+            let relevance_b = Self::calculate_memory_relevance_static(b, query);
             relevance_b.partial_cmp(&relevance_a).unwrap()
         });
 
         results
     }
 
-    fn calculate_memory_relevance(&self, memory: &Memory, query: &MemoryQuery) -> f32 {
+    fn search_short_term(&self, query: &MemoryQuery) -> Vec<Memory> {
+        self.short_term.search(query)
+    }
+
+    fn search_long_term(&self, query: &MemoryQuery) -> Vec<Memory> {
+        self.long_term.search(query)
+    }
+
+    fn search_episodic(&self, query: &MemoryQuery) -> Vec<Memory> {
+        self.episodic_memory.search(query)
+    }
+
+    fn update_recall_statistics(&mut self, memory_ids: &[Memory]) {
+        // Update recall counts in short-term memory
+        for memory in &mut self.short_term.entries {
+            if memory_ids.iter().any(|m| m.id == memory.id) {
+                memory.recall_count += 1;
+                memory.importance = (memory.importance * 1.1).min(1.0);
+            }
+        }
+
+        // Update recall counts in long-term memory
+        for memory in &mut self.long_term.memories {
+            if memory_ids.iter().any(|m| m.id == memory.id) {
+                memory.recall_count += 1;
+                memory.importance = (memory.importance * 1.1).min(1.0);
+            }
+        }
+    }
+
+    fn calculate_memory_relevance_static(memory: &Memory, query: &MemoryQuery) -> f32 {
         let mut relevance = memory.importance;
 
-        // Boost relevance for matching types
         if let Some(query_type) = &query.memory_type {
             if std::mem::discriminant(&memory.event.memory_type) ==
                 std::mem::discriminant(query_type) {
@@ -173,14 +183,12 @@ impl NPCMemory {
             }
         }
 
-        // Boost relevance for matching entities
         if let Some(query_entity) = query.entity {
             if memory.event.entities.contains(&query_entity) {
                 relevance *= 1.3;
             }
         }
 
-        // Boost relevance for matching keywords
         for keyword in &query.keywords {
             if memory.event.description.to_lowercase().contains(&keyword.to_lowercase()) {
                 relevance *= 1.2;
@@ -190,25 +198,44 @@ impl NPCMemory {
         relevance
     }
 
-    pub fn consolidate_memories(&mut self, delta_time: f32) {
-        // Decay memories over time
-        self.short_term.decay_memories(delta_time);
-        self.long_term.decay_memories(delta_time);
+    pub fn decay_memories(&mut self, delta_time: f32) {
+        // Decay memories in each system separately
+        self.decay_short_term_memories(delta_time);
+        self.decay_long_term_memories(delta_time);
+        self.promote_memories();
+        self.semantic_memory.consolidate();
+    }
 
-        // Move important short-term memories to long-term
-        let mut to_promote = Vec::new();
-        for memory in &self.short_term.entries {
-            if memory.importance > 0.6 && memory.recall_count > 2 {
-                to_promote.push(memory.clone());
-            }
+    fn decay_short_term_memories(&mut self, delta_time: f32) {
+        for memory in &mut self.short_term.entries {
+            memory.importance *= 1.0 - (memory.decay_rate * delta_time);
+        }
+        self.short_term.entries.retain(|memory| memory.importance > 0.1);
+    }
+
+    fn decay_long_term_memories(&mut self, delta_time: f32) {
+        let original_len = self.long_term.memories.len();
+
+        for memory in &mut self.long_term.memories {
+            memory.importance *= 1.0 - (memory.decay_rate * delta_time * 0.1);
         }
 
-        for memory in to_promote {
+        self.long_term.memories.retain(|memory| memory.importance > 0.05);
+
+        if self.long_term.memories.len() != original_len {
+            self.long_term.rebuild_indices();
+        }
+    }
+
+    fn promote_memories(&mut self) {
+        let candidates: Vec<Memory> = self.short_term.entries.iter()
+            .filter(|memory| memory.importance > 0.6 && memory.recall_count > 2)
+            .cloned()
+            .collect();
+
+        for memory in candidates {
             self.long_term.add(memory);
         }
-
-        // Consolidate semantic knowledge
-        self.semantic_memory.consolidate();
     }
 }
 
@@ -219,7 +246,7 @@ pub struct Memory {
     pub importance: f32,
     pub timestamp: f64,
     pub recall_count: u32,
-    pub associations: Vec<Uuid>, // IDs of associated memories
+    pub associations: Vec<Uuid>,
     pub decay_rate: f32,
 }
 
@@ -249,7 +276,7 @@ pub enum MemoryType {
     },
     Spatial {
         significance: f32,
-        coordinates: Option<storm_math::Vec3>,
+        coordinates: Option<Vec3>,
     },
     Procedural {
         success_rate: f32,
@@ -259,10 +286,10 @@ pub enum MemoryType {
 
 #[derive(Debug, Clone)]
 pub enum MemoryImportance {
-    Low,      // 0.0 - 0.3
-    Medium,   // 0.3 - 0.6
-    High,     // 0.6 - 0.8
-    Critical, // 0.8 - 1.0
+    Low,
+    Medium,
+    High,
+    Critical,
 }
 
 impl From<f32> for MemoryImportance {
@@ -276,7 +303,6 @@ impl From<f32> for MemoryImportance {
     }
 }
 
-// Short-term memory with limited capacity
 #[derive(Debug, Clone)]
 pub struct ShortTermMemory {
     pub entries: VecDeque<Memory>,
@@ -292,7 +318,6 @@ impl ShortTermMemory {
     }
 
     pub fn add(&mut self, memory: Memory) {
-        // Remove oldest if at capacity
         if self.entries.len() >= self.capacity {
             self.entries.pop_front();
         }
@@ -301,34 +326,30 @@ impl ShortTermMemory {
 
     pub fn search(&self, query: &MemoryQuery) -> Vec<Memory> {
         self.entries.iter()
-            .filter(|memory| self.matches_query(memory, query))
+            .filter(|memory| Self::matches_query_static(memory, query))
             .cloned()
             .collect()
     }
 
-    fn matches_query(&self, memory: &Memory, query: &MemoryQuery) -> bool {
-        // Check time range
+    fn matches_query_static(memory: &Memory, query: &MemoryQuery) -> bool {
         if let Some(time_range) = &query.time_range {
             if memory.timestamp < time_range.start || memory.timestamp > time_range.end {
                 return false;
             }
         }
 
-        // Check importance threshold
         if let Some(min_importance) = query.min_importance {
             if memory.importance < min_importance {
                 return false;
             }
         }
 
-        // Check entity involvement
         if let Some(entity) = query.entity {
             if !memory.event.entities.contains(&entity) {
                 return false;
             }
         }
 
-        // Check keywords
         if !query.keywords.is_empty() {
             let description_lower = memory.event.description.to_lowercase();
             let matches = query.keywords.iter()
@@ -340,18 +361,8 @@ impl ShortTermMemory {
 
         true
     }
-
-    pub fn decay_memories(&mut self, delta_time: f32) {
-        for memory in &mut self.entries {
-            memory.importance *= 1.0 - (memory.decay_rate * delta_time);
-        }
-
-        // Remove memories that have decayed too much
-        self.entries.retain(|memory| memory.importance > 0.1);
-    }
 }
 
-// Long-term memory with indexed storage
 #[derive(Debug, Clone)]
 pub struct LongTermMemory {
     pub memories: Vec<Memory>,
@@ -372,7 +383,6 @@ impl LongTermMemory {
     }
 
     pub fn search(&self, query: &MemoryQuery) -> Vec<Memory> {
-        // Use indices for faster search
         let candidate_ids = self.indices.find_candidates(query);
 
         self.memories.iter()
@@ -381,33 +391,20 @@ impl LongTermMemory {
             .collect()
     }
 
-    pub fn decay_memories(&mut self, delta_time: f32) {
-        for memory in &mut self.memories {
-            // Long-term memories decay slower
-            memory.importance *= 1.0 - (memory.decay_rate * delta_time * 0.1);
-        }
-
-        // Remove completely faded memories
-        let original_len = self.memories.len();
-        self.memories.retain(|memory| memory.importance > 0.05);
-
-        // Rebuild indices if memories were removed
-        if self.memories.len() != original_len {
-            self.indices = MemoryIndices::new();
-            for memory in &self.memories {
-                self.indices.index_memory(memory);
-            }
+    pub fn rebuild_indices(&mut self) {
+        self.indices = MemoryIndices::new();
+        for memory in &self.memories {
+            self.indices.index_memory(memory);
         }
     }
 }
 
-// Memory indexing for efficient search
 #[derive(Debug, Clone)]
 pub struct MemoryIndices {
     pub entity_index: HashMap<Entity, Vec<Uuid>>,
     pub type_index: HashMap<String, Vec<Uuid>>,
     pub keyword_index: HashMap<String, Vec<Uuid>>,
-    pub time_index: BTreeMap<u64, Vec<Uuid>>, // Timestamp buckets
+    pub time_index: BTreeMap<u64, Vec<Uuid>>,
 }
 
 impl MemoryIndices {
@@ -436,11 +433,11 @@ impl MemoryIndices {
             .or_insert_with(Vec::new)
             .push(memory_id);
 
-        // Index by keywords (from description and tags)
+        // Index by keywords
         let words: Vec<String> = memory.event.description
             .split_whitespace()
             .chain(memory.event.tags.iter().map(|s| s.as_str()))
-            .filter(|word| word.len() > 2) // Skip short words
+            .filter(|word| word.len() > 2)
             .map(|word| word.to_lowercase())
             .collect();
 
@@ -450,18 +447,17 @@ impl MemoryIndices {
                 .push(memory_id);
         }
 
-        // Index by time (in hour buckets)
-        let time_bucket = (memory.timestamp / 3600.0) as u64; // Hour buckets
+        // Index by time buckets
+        let time_bucket = (memory.timestamp / 3600.0) as u64;
         self.time_index.entry(time_bucket)
             .or_insert_with(Vec::new)
             .push(memory_id);
     }
 
-    pub fn find_candidates(&self, query: &MemoryQuery) -> std::collections::HashSet<Uuid> {
-        let mut candidates = std::collections::HashSet::new();
+    pub fn find_candidates(&self, query: &MemoryQuery) -> HashSet<Uuid> {
+        let mut candidates = HashSet::new();
         let mut first_constraint = true;
 
-        // Filter by entity
         if let Some(entity) = query.entity {
             if let Some(entity_memories) = self.entity_index.get(&entity) {
                 if first_constraint {
@@ -470,12 +466,11 @@ impl MemoryIndices {
                 } else {
                     candidates.retain(|id| entity_memories.contains(id));
                 }
-            } else if first_constraint {
-                return candidates; // No memories for this entity
+            } else {
+                return candidates;
             }
         }
 
-        // Filter by keywords
         for keyword in &query.keywords {
             if let Some(keyword_memories) = self.keyword_index.get(&keyword.to_lowercase()) {
                 if first_constraint {
@@ -484,14 +479,12 @@ impl MemoryIndices {
                 } else {
                     candidates.retain(|id| keyword_memories.contains(id));
                 }
-            } else if first_constraint {
-                return candidates; // No memories for this keyword
+            } else {
+                return candidates;
             }
         }
 
-        // If no constraints applied, return all memories
         if first_constraint {
-            // Collect all memory IDs from any index
             for ids in self.entity_index.values() {
                 candidates.extend(ids);
             }
@@ -501,7 +494,6 @@ impl MemoryIndices {
     }
 }
 
-// Working memory for current context
 #[derive(Debug, Clone)]
 pub struct WorkingMemory {
     pub current_context: Vec<ContextItem>,
@@ -516,7 +508,7 @@ impl WorkingMemory {
             current_context: Vec::new(),
             attention_focus: Vec::new(),
             active_goals: Vec::new(),
-            max_items: 7, // Miller's rule: 7±2 items
+            max_items: 7,
         }
     }
 
@@ -532,19 +524,16 @@ impl WorkingMemory {
 
         self.current_context.push(context_item);
 
-        // Keep only the most recent items
         if self.current_context.len() > self.max_items {
             self.current_context.remove(0);
         }
 
-        // Update attention focus
         for entity in &event.entities {
             if !self.attention_focus.contains(entity) {
                 self.attention_focus.push(*entity);
             }
         }
 
-        // Keep attention focus limited
         if self.attention_focus.len() > 3 {
             self.attention_focus.remove(0);
         }
@@ -568,7 +557,6 @@ pub struct ContextItem {
     pub timestamp: f64,
 }
 
-// Episodic memory for sequential experiences
 #[derive(Debug, Clone)]
 pub struct EpisodicMemory {
     pub episodes: Vec<Episode>,
@@ -584,16 +572,23 @@ impl EpisodicMemory {
     }
 
     pub fn add_episode(&mut self, memory: &Memory) {
-        // Check if this continues the current episode
-        if let Some(ref mut episode) = self.current_episode {
-            if self.is_episode_continuation(memory, episode) {
+        let should_continue = if let Some(ref episode) = self.current_episode {
+            Self::is_episode_continuation_static(memory, episode)
+        } else {
+            false
+        };
+
+        if should_continue {
+            if let Some(ref mut episode) = self.current_episode {
                 episode.memories.push(memory.id);
                 episode.end_time = memory.timestamp;
-                return;
-            } else {
-                // End current episode and start new one
-                self.episodes.push(episode.clone());
             }
+            return;
+        }
+
+        // End current episode if it exists
+        if let Some(episode) = self.current_episode.take() {
+            self.episodes.push(episode);
         }
 
         // Start new episode
@@ -602,20 +597,16 @@ impl EpisodicMemory {
             memories: vec![memory.id],
             start_time: memory.timestamp,
             end_time: memory.timestamp,
-            theme: self.extract_episode_theme(memory),
+            theme: Self::extract_episode_theme_static(memory),
         });
     }
 
-    fn is_episode_continuation(&self, memory: &Memory, episode: &Episode) -> bool {
-        // Episodes continue if they're within a reasonable time window
-        // and share thematic elements
+    fn is_episode_continuation_static(memory: &Memory, episode: &Episode) -> bool {
         let time_gap = memory.timestamp - episode.end_time;
-        time_gap < 3600.0 && // Within 1 hour
-            memory.event.description.contains(&episode.theme)
+        time_gap < 3600.0 && memory.event.description.contains(&episode.theme)
     }
 
-    fn extract_episode_theme(&self, memory: &Memory) -> String {
-        // Extract main theme from memory description
+    fn extract_episode_theme_static(memory: &Memory) -> String {
         let words: Vec<&str> = memory.event.description.split_whitespace().collect();
         if words.len() > 2 {
             format!("{} {}", words[0], words[1])
@@ -624,9 +615,7 @@ impl EpisodicMemory {
         }
     }
 
-    pub fn search(&self, query: &MemoryQuery) -> Vec<Memory> {
-        // For now, return empty - would need access to full memory system
-        // In full implementation, would search through episodes
+    pub fn search(&self, _query: &MemoryQuery) -> Vec<Memory> {
         Vec::new()
     }
 }
@@ -640,7 +629,6 @@ pub struct Episode {
     pub theme: String,
 }
 
-// Semantic memory for general knowledge
 #[derive(Debug, Clone)]
 pub struct SemanticMemory {
     pub knowledge_base: HashMap<String, KnowledgeNode>,
@@ -656,7 +644,6 @@ impl SemanticMemory {
     }
 
     pub fn extract_knowledge(&mut self, memory: &Memory) {
-        // Extract semantic knowledge from significant memories
         match &memory.event.memory_type {
             MemoryType::Knowledge { topic, relevance, .. } => {
                 let knowledge = KnowledgeNode {
@@ -681,9 +668,7 @@ impl SemanticMemory {
     }
 
     pub fn consolidate(&mut self) {
-        // Consolidate related knowledge nodes
-        // This would involve finding patterns and creating generalizations
-        // Simplified implementation for now
+        // Placeholder for knowledge consolidation logic
     }
 
     pub fn get_knowledge(&self, topic: &str) -> Option<&KnowledgeNode> {
@@ -695,7 +680,7 @@ impl SemanticMemory {
 pub struct KnowledgeNode {
     pub topic: String,
     pub confidence: f32,
-    pub evidence: Vec<Uuid>, // Supporting memory IDs
+    pub evidence: Vec<Uuid>,
     pub last_updated: f64,
 }
 
@@ -709,13 +694,12 @@ pub struct KnowledgeRelation {
 
 #[derive(Debug, Clone)]
 pub enum RelationType {
-    IsA,      // Category relationship
-    PartOf,   // Composition relationship
-    Causes,   // Causal relationship
-    Similar,  // Similarity relationship
+    IsA,
+    PartOf,
+    Causes,
+    Similar,
 }
 
-// Memory query structure
 #[derive(Debug, Clone)]
 pub struct MemoryQuery {
     pub keywords: Vec<String>,

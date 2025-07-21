@@ -5,7 +5,7 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use ordered_float::OrderedFloat;
-use crate::behavior::WorldContext;
+use crate::behavior::{WorldContext, SongResonance};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EmotionalState {
